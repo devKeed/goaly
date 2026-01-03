@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/goal.dart';
+import '../models/task.dart';
 import '../services/storage_service.dart';
 import '../widgets/goal_card.dart';
+import '../widgets/kanban_board.dart';
 
 class HomeScreen extends StatefulWidget {
   final StorageService storageService;
@@ -97,6 +99,43 @@ class _HomeScreenState extends State<HomeScreen> {
         target: 10,
       ));
     }
+
+    // Add sample work tasks if empty
+    if (widget.storageService.getAllTasks().isEmpty) {
+      widget.storageService.addTask(Task(
+        id: _uuid.v4(),
+        title: 'Review PR #42',
+        description: 'Check the new authentication flow',
+        status: TaskStatus.todo,
+        order: 0,
+      ));
+      widget.storageService.addTask(Task(
+        id: _uuid.v4(),
+        title: 'Fix login bug',
+        description: 'Users getting logged out randomly',
+        status: TaskStatus.todo,
+        order: 1,
+      ));
+      widget.storageService.addTask(Task(
+        id: _uuid.v4(),
+        title: 'Update API docs',
+        status: TaskStatus.inProgress,
+        order: 0,
+      ));
+      widget.storageService.addTask(Task(
+        id: _uuid.v4(),
+        title: 'Deploy v2.1',
+        description: 'Push to production',
+        status: TaskStatus.inProgress,
+        order: 1,
+      ));
+      widget.storageService.addTask(Task(
+        id: _uuid.v4(),
+        title: 'Setup CI/CD',
+        status: TaskStatus.done,
+        order: 0,
+      ));
+    }
   }
 
   @override
@@ -115,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildGoalList(widget.storageService.getDailyGoals(), true),
           _buildGoalList(widget.storageService.getWeeklyGoals(), false),
           _buildLongTermList(),
+          _buildWorkBoard(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -138,12 +178,19 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIcon: Icon(Icons.flag),
             label: 'Long Term',
           ),
+          NavigationDestination(
+            icon: Icon(Icons.work_outline),
+            selectedIcon: Icon(Icons.work),
+            label: 'Work',
+          ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddGoalDialog(context),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _currentIndex != 3
+          ? FloatingActionButton(
+              onPressed: () => _showAddGoalDialog(context),
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 
@@ -155,6 +202,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return 'This Week';
       case 2:
         return 'Long Term Goals';
+      case 3:
+        return 'Work Tasks';
       default:
         return 'Fortune';
     }
@@ -241,6 +290,22 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () => _showMilestoneDialog(context, goal),
           ),
         );
+      },
+    );
+  }
+
+  Widget _buildWorkBoard() {
+    return KanbanBoard(
+      tasks: widget.storageService.getAllTasks(),
+      onTaskMoved: (task, newStatus) {
+        task.moveTo(newStatus);
+        setState(() {});
+      },
+      onAddTask: (status) => _showAddTaskDialog(context, status),
+      onTaskTap: (task) => _showEditTaskDialog(context, task),
+      onTaskDelete: (task) {
+        widget.storageService.deleteTask(task.id);
+        setState(() {});
       },
     );
   }
@@ -364,6 +429,151 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showAddTaskDialog(BuildContext context, TaskStatus status) {
+    final titleController = TextEditingController();
+    final descController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('New Task'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Task title',
+                  border: OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descController,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (titleController.text.trim().isEmpty) return;
+
+              final tasksInStatus = widget.storageService
+                  .getAllTasks()
+                  .where((t) => t.status == status)
+                  .length;
+
+              final task = Task(
+                id: _uuid.v4(),
+                title: titleController.text.trim(),
+                description: descController.text.trim().isEmpty
+                    ? null
+                    : descController.text.trim(),
+                status: status,
+                order: tasksInStatus,
+              );
+
+              widget.storageService.addTask(task);
+              setState(() {});
+              Navigator.pop(context);
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditTaskDialog(BuildContext context, Task task) {
+    final titleController = TextEditingController(text: task.title);
+    final descController = TextEditingController(text: task.description ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Edit Task',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Task title',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () {
+                    if (titleController.text.trim().isEmpty) return;
+                    task.title = titleController.text.trim();
+                    task.description = descController.text.trim().isEmpty
+                        ? null
+                        : descController.text.trim();
+                    task.save();
+                    setState(() {});
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Save'),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showMilestoneDialog(BuildContext context, Goal goal) {
     final milestoneController = TextEditingController();
 
@@ -387,11 +597,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      goal.title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        goal.title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     IconButton(

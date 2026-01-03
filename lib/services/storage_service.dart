@@ -1,13 +1,16 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/goal.dart';
+import '../models/task.dart';
 
 class StorageService {
   static const String _goalsBoxName = 'goals';
+  static const String _tasksBoxName = 'tasks';
   static const String _settingsBoxName = 'settings';
   static const String _lastOpenedDateKey = 'lastOpenedDate';
   static const String _lastWeekNumberKey = 'lastWeekNumber';
 
   late Box<Goal> _goalsBox;
+  late Box<Task> _tasksBox;
   late Box<dynamic> _settingsBox;
 
   Future<void> init() async {
@@ -15,8 +18,11 @@ class StorageService {
 
     Hive.registerAdapter(GoalTypeAdapter());
     Hive.registerAdapter(GoalAdapter());
+    Hive.registerAdapter(TaskStatusAdapter());
+    Hive.registerAdapter(TaskAdapter());
 
     _goalsBox = await Hive.openBox<Goal>(_goalsBoxName);
+    _tasksBox = await Hive.openBox<Task>(_tasksBoxName);
     _settingsBox = await Hive.openBox(_settingsBoxName);
   }
 
@@ -41,6 +47,19 @@ class StorageService {
   }
 
   Goal? getGoal(String id) => _goalsBox.get(id);
+
+  // Tasks CRUD
+  List<Task> getAllTasks() => _tasksBox.values.toList();
+
+  Future<void> addTask(Task task) async {
+    await _tasksBox.put(task.id, task);
+  }
+
+  Future<void> deleteTask(String id) async {
+    await _tasksBox.delete(id);
+  }
+
+  Task? getTask(String id) => _tasksBox.get(id);
 
   // Reset logic
   DateTime? getLastOpenedDate() {
