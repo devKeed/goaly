@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Fortune (iOS Simulator)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "iPhone"
+    },
+    {
+      "name": "Fortune (Debug)",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "Fortune (Profile)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile"
+    },
+    {
+      "name": "Fortune (Release)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release"
+    }
+  ]
+}

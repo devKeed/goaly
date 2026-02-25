@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import '../models/goal.dart';
 import '../models/task.dart';
@@ -147,6 +148,13 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
+        actions: [
+          IconButton(
+            tooltip: 'Pie Program',
+            onPressed: () => context.push('/pie-program'),
+            icon: const Icon(Icons.pie_chart_outline_rounded),
+          ),
+        ],
       ),
       body: IndexedStack(
         index: _currentIndex,
