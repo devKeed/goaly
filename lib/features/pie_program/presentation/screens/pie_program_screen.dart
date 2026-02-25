@@ -184,32 +184,52 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
                 ),
               ),
               const SizedBox(height: 8),
-              ..._draftTasks.map((task) {
+              ..._draftTasks.asMap().entries.map((entry) {
+                final index = entry.key;
+                final task = entry.value;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
                     children: [
                       Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: () => _showTaskDraftDialog(
+                            context,
+                            existingTask: task,
+                            editIndex: index,
                           ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Text(
-                            '${task.title} · ${task.durationMinutes}m',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                          child: Ink(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceVariant,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Text(
+                              '${task.title} · ${task.durationMinutes}m',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
                           ),
                         ),
                       ),
                       IconButton(
-                        onPressed: () => setState(() => _draftTasks.remove(task)),
+                        tooltip: 'Edit',
+                        onPressed: () => _showTaskDraftDialog(
+                          context,
+                          existingTask: task,
+                          editIndex: index,
+                        ),
+                        icon: const Icon(Icons.edit_outlined),
+                      ),
+                      IconButton(
+                        tooltip: 'Delete',
+                        onPressed: () => setState(() => _draftTasks.removeAt(index)),
                         icon: const Icon(Icons.close_rounded),
                       ),
                     ],
@@ -360,16 +380,23 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
     }
   }
 
-  Future<void> _showTaskDraftDialog(BuildContext context) async {
-    final titleController = TextEditingController();
-    PieBlockCategory selectedCategory = PieBlockCategory.work;
-    final durationController = TextEditingController(text: '60');
+  Future<void> _showTaskDraftDialog(
+    BuildContext context, {
+    _TaskDraft? existingTask,
+    int? editIndex,
+  }) async {
+    final isEditing = existingTask != null && editIndex != null;
+    final titleController = TextEditingController(text: existingTask?.title ?? '');
+    PieBlockCategory selectedCategory = existingTask?.category ?? PieBlockCategory.work;
+    final durationController = TextEditingController(
+      text: (existingTask?.durationMinutes ?? 60).toString(),
+    );
 
     await showDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Recurring task'),
+          title: Text(isEditing ? 'Edit recurring task' : 'Recurring task'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -413,19 +440,22 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
                 if (title.isEmpty) {
                   return;
                 }
-                final duration = int.tryParse(durationController.text) ?? 60;
+                final duration = (int.tryParse(durationController.text) ?? 60).clamp(15, 1440);
                 setState(() {
-                  _draftTasks.add(
-                    _TaskDraft(
-                      title: title,
-                      category: selectedCategory,
-                      durationMinutes: duration,
-                    ),
+                  final updated = _TaskDraft(
+                    title: title,
+                    category: selectedCategory,
+                    durationMinutes: duration,
                   );
+                  if (isEditing) {
+                    _draftTasks[editIndex] = updated;
+                  } else {
+                    _draftTasks.add(updated);
+                  }
                 });
                 Navigator.pop(context);
               },
-              child: const Text('Add'),
+              child: Text(isEditing ? 'Save' : 'Add'),
             ),
           ],
         ),
