@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../theme/app_colors.dart';
+import '../../../../widgets/fortune_character.dart';
 import '../../application/controllers/pie_program_controller.dart';
 import '../../application/controllers/pie_program_view_state.dart';
 import '../../application/providers/pie_program_providers.dart';
@@ -13,7 +15,6 @@ import '../widgets/pie_block_editor_sheet.dart';
 import '../widgets/pie_block_list.dart';
 import '../widgets/pie_center_panel.dart';
 import '../widgets/pie_insights_panel.dart';
-import '../widgets/pie_visuals.dart';
 
 class PieProgramScreen extends ConsumerStatefulWidget {
   const PieProgramScreen({super.key});
@@ -55,9 +56,8 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
     final asyncState = ref.watch(pieProgramControllerProvider);
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         title: const Text('Pie Program'),
         actions: [
           IconButton(
@@ -69,31 +69,35 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
           ),
         ],
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFE8EEF7), Color(0xFFF5F8FC)],
-          ),
+      body: asyncState.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
         ),
-        child: SafeArea(
-          child: asyncState.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => Center(
-              child: Text(
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const FortuneCharacter(
+                size: 80,
+                mood: CharacterMood.sad,
+                bodyColor: AppColors.cardPink,
+                accentColor: AppColors.cardPinkAccent,
+              ),
+              const SizedBox(height: 16),
+              Text(
                 'Pie Program failed to load:\n$error',
                 textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.textSecondary),
               ),
-            ),
-            data: (data) {
-              if (data.template == null) {
-                return _buildOnboarding(context);
-              }
-              return _buildContent(context, data);
-            },
+            ],
           ),
         ),
+        data: (data) {
+          if (data.template == null) {
+            return _buildOnboarding(context);
+          }
+          return _buildContent(context, data);
+        },
       ),
     );
   }
@@ -102,18 +106,22 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
+        // Character illustration
+        const Center(
+          child: FortuneCharacter(
+            size: 90,
+            mood: CharacterMood.waving,
+            bodyColor: AppColors.cardPurple,
+            accentColor: AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: 20),
         Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.divider),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,13 +131,13 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: PieVisuals.foreground,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
               const Text(
                 'This is used every day at midnight.',
-                style: TextStyle(color: PieVisuals.subForeground),
+                style: TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 18),
               Row(
@@ -172,7 +180,7 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
                 'Recurring tasks',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: PieVisuals.foreground,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -188,21 +196,21 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
                             vertical: 10,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF5F8FC),
+                            color: AppColors.surfaceVariant,
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Text(
                             '${task.title} · ${task.durationMinutes}m',
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: PieVisuals.foreground,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ),
                       ),
                       IconButton(
                         onPressed: () => setState(() => _draftTasks.remove(task)),
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(Icons.close_rounded),
                       ),
                     ],
                   ),
@@ -212,7 +220,7 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
                 alignment: Alignment.centerLeft,
                 child: OutlinedButton.icon(
                   onPressed: () => _showTaskDraftDialog(context),
-                  icon: const Icon(Icons.add),
+                  icon: const Icon(Icons.add_rounded),
                   label: const Text('Add recurring task'),
                 ),
               ),
@@ -301,15 +309,15 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.95),
-              borderRadius: BorderRadius.circular(18),
+              color: AppColors.cardLavender,
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
               nextBlock == null
                   ? 'No upcoming task before midnight.'
                   : 'Next: ${nextBlock.title} at ${DateFormat('HH:mm').format(nextBlock.startTime)}',
               style: const TextStyle(
-                color: PieVisuals.subForeground,
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -367,13 +375,13 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
             children: [
               TextField(
                 controller: titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
+                decoration: const InputDecoration(hintText: 'Title'),
               ),
               const SizedBox(height: 10),
               TextField(
                 controller: durationController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Duration (minutes)'),
+                decoration: const InputDecoration(hintText: 'Duration (minutes)'),
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<PieBlockCategory>(
@@ -456,7 +464,7 @@ class _TimeTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: Ink(
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F8FC),
+          color: AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(14),
         ),
         padding: const EdgeInsets.all(12),
@@ -466,7 +474,7 @@ class _TimeTile extends StatelessWidget {
             Text(
               label,
               style: const TextStyle(
-                color: PieVisuals.subForeground,
+                color: AppColors.textSecondary,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -477,7 +485,7 @@ class _TimeTile extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: PieVisuals.foreground,
+                color: AppColors.textPrimary,
               ),
             ),
           ],

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../models/goal.dart';
+import '../theme/app_colors.dart';
 
 class GoalCard extends StatelessWidget {
   final Goal goal;
@@ -19,61 +21,58 @@ class GoalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
           color: goal.isCompleted
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
-              : Colors.grey.withValues(alpha: 0.2),
+              ? AppColors.accent.withValues(alpha: 0.4)
+              : AppColors.divider,
         ),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: _buildContent(context),
+          child: _buildContent(),
         ),
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context) {
+  Widget _buildContent() {
     switch (goal.type) {
       case GoalType.boolean:
-        return _buildBooleanContent(context);
+        return _buildBooleanContent();
       case GoalType.counter:
-        return _buildCounterContent(context);
+        return _buildCounterContent();
       case GoalType.longTerm:
-        return _buildLongTermContent(context);
+        return _buildLongTermContent();
     }
   }
 
-  Widget _buildBooleanContent(BuildContext context) {
+  Widget _buildBooleanContent() {
     return Row(
       children: [
         GestureDetector(
           onTap: onToggle,
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
             width: 28,
             height: 28,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: goal.isCompleted
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.grey,
-                width: 2,
-              ),
-              color: goal.isCompleted
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.transparent,
+              color: goal.isCompleted ? AppColors.accent : Colors.transparent,
+              border: goal.isCompleted
+                  ? null
+                  : Border.all(color: AppColors.textTertiary, width: 2),
             ),
             child: goal.isCompleted
-                ? const Icon(Icons.check, size: 18, color: Colors.white)
+                ? const Icon(Icons.check_rounded,
+                    size: 18, color: Colors.white)
                 : null,
           ),
         ),
@@ -86,7 +85,9 @@ class GoalCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
               decoration:
                   goal.isCompleted ? TextDecoration.lineThrough : null,
-              color: goal.isCompleted ? Colors.grey : null,
+              color: goal.isCompleted
+                  ? AppColors.textTertiary
+                  : AppColors.textPrimary,
             ),
           ),
         ),
@@ -94,9 +95,7 @@ class GoalCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCounterContent(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
+  Widget _buildCounterContent() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -109,29 +108,33 @@ class GoalCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: goal.isCompleted ? colorScheme.primary : null,
+                  color: goal.isCompleted
+                      ? AppColors.accent
+                      : AppColors.textPrimary,
                 ),
               ),
             ),
             Row(
               children: [
                 _CounterButton(
-                  icon: Icons.remove,
+                  icon: Icons.remove_rounded,
                   onTap: goal.progress > 0 ? onDecrement : null,
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
-                    '${goal.progress} / ${goal.target}',
+                    '${goal.progress}/${goal.target}',
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: goal.isCompleted ? colorScheme.primary : null,
+                      fontWeight: FontWeight.w700,
+                      color: goal.isCompleted
+                          ? AppColors.accent
+                          : AppColors.textPrimary,
                     ),
                   ),
                 ),
                 _CounterButton(
-                  icon: Icons.add,
+                  icon: Icons.add_rounded,
                   onTap: goal.progress < goal.target ? onIncrement : null,
                 ),
               ],
@@ -144,9 +147,9 @@ class GoalCard extends StatelessWidget {
           child: LinearProgressIndicator(
             value: goal.progressPercentage,
             minHeight: 6,
-            backgroundColor: Colors.grey.withValues(alpha: 0.2),
+            backgroundColor: AppColors.surfaceVariant,
             valueColor: AlwaysStoppedAnimation<Color>(
-              goal.isCompleted ? colorScheme.primary : colorScheme.secondary,
+              goal.isCompleted ? AppColors.accent : AppColors.primary,
             ),
           ),
         ),
@@ -154,18 +157,16 @@ class GoalCard extends StatelessWidget {
     );
   }
 
-  Widget _buildLongTermContent(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
+  Widget _buildLongTermContent() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(
-              Icons.flag_outlined,
+            const Icon(
+              Icons.flag_rounded,
               size: 20,
-              color: colorScheme.primary,
+              color: AppColors.primary,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -174,15 +175,17 @@ class GoalCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
             if (goal.target > 0)
               Text(
-                '${goal.milestones.length} / ${goal.target}',
-                style: TextStyle(
+                '${goal.milestones.length}/${goal.target}',
+                style: const TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
                 ),
               ),
           ],
@@ -191,21 +194,21 @@ class GoalCard extends StatelessWidget {
           const SizedBox(height: 12),
           ...goal.milestones.take(3).map(
                 (m) => Padding(
-                  padding: const EdgeInsets.only(left: 28, bottom: 4),
+                  padding: const EdgeInsets.only(left: 28, bottom: 6),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.check_circle,
+                      const Icon(
+                        Icons.check_circle_rounded,
                         size: 16,
-                        color: colorScheme.primary,
+                        color: AppColors.accent,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           m,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[700],
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ),
@@ -218,9 +221,9 @@ class GoalCard extends StatelessWidget {
               padding: const EdgeInsets.only(left: 28),
               child: Text(
                 '+${goal.milestones.length - 3} more',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 13,
-                  color: Colors.grey[500],
+                  color: AppColors.textTertiary,
                 ),
               ),
             ),
@@ -232,8 +235,9 @@ class GoalCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: goal.progressPercentage,
               minHeight: 6,
-              backgroundColor: Colors.grey.withValues(alpha: 0.2),
-              valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+              backgroundColor: AppColors.surfaceVariant,
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ),
         ],
@@ -255,20 +259,18 @@ class _CounterButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 32,
-        height: 32,
+        width: 34,
+        height: 34,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: enabled
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
-              : Colors.grey.withValues(alpha: 0.1),
+              ? AppColors.primary.withValues(alpha: 0.1)
+              : AppColors.surfaceVariant,
         ),
         child: Icon(
           icon,
           size: 18,
-          color: enabled
-              ? Theme.of(context).colorScheme.primary
-              : Colors.grey[400],
+          color: enabled ? AppColors.primary : AppColors.textTertiary,
         ),
       ),
     );

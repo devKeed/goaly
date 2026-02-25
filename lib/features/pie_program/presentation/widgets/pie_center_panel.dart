@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../theme/app_colors.dart';
 import 'pie_visuals.dart';
 
 class PieCenterPanel extends StatelessWidget {
@@ -21,17 +22,9 @@ class PieCenterPanel extends StatelessWidget {
     return Container(
       width: 182,
       height: 182,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: 0.94),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 18,
-            spreadRadius: 1,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: AppColors.surface,
       ),
       padding: const EdgeInsets.all(18),
       child: Column(

@@ -1,30 +1,31 @@
 import 'package:flutter/material.dart';
 
+import '../../../../theme/app_colors.dart';
 import '../../domain/entities/pie_block_category.dart';
 
 class PieVisuals {
-  static const Color surface = Color(0xFFF4F7FB);
-  static const Color foreground = Color(0xFF10212E);
-  static const Color subForeground = Color(0xFF5B6C7A);
+  static const Color surface = AppColors.background;
+  static const Color foreground = AppColors.textPrimary;
+  static const Color subForeground = AppColors.textSecondary;
 
   static List<Color> gradientForCategory(PieBlockCategory category, int fallbackColor) {
     switch (category) {
       case PieBlockCategory.sleep:
-        return const [Color(0xFF3F51B5), Color(0xFF7986CB)];
+        return const [Color(0xFF6C5CE7), Color(0xFFA29BFE)];
       case PieBlockCategory.work:
-        return const [Color(0xFF00897B), Color(0xFF26A69A)];
+        return const [Color(0xFF00C9A7), Color(0xFF55EFC4)];
       case PieBlockCategory.focus:
-        return const [Color(0xFF1976D2), Color(0xFF42A5F5)];
+        return const [Color(0xFF4A90D9), Color(0xFF74B9FF)];
       case PieBlockCategory.fitness:
-        return const [Color(0xFFD81B60), Color(0xFFEC407A)];
+        return const [Color(0xFFFF6B9D), Color(0xFFFFB8D0)];
       case PieBlockCategory.meals:
-        return const [Color(0xFFEF6C00), Color(0xFFFFA726)];
+        return const [Color(0xFFFF9F43), Color(0xFFFFD4A8)];
       case PieBlockCategory.commute:
-        return const [Color(0xFF6D4C41), Color(0xFF8D6E63)];
+        return const [Color(0xFF6D4C41), Color(0xFFA1887F)];
       case PieBlockCategory.personal:
-        return const [Color(0xFFF9A825), Color(0xFFFFD54F)];
+        return const [Color(0xFFFFC312), Color(0xFFFFE082)];
       case PieBlockCategory.leisure:
-        return const [Color(0xFF7B1FA2), Color(0xFFAB47BC)];
+        return const [Color(0xFFA29BFE), Color(0xFFD4CCFF)];
       case PieBlockCategory.other:
         final base = Color(fallbackColor);
         return [base.withValues(alpha: 0.92), base.withValues(alpha: 0.65)];

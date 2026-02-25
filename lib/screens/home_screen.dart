@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
+
 import '../models/goal.dart';
 import '../models/task.dart';
 import '../services/storage_service.dart';
-import '../widgets/goal_card.dart';
-import '../widgets/kanban_board.dart';
+import '../theme/app_colors.dart';
+import '../widgets/fortune_character.dart';
+import '../widgets/greeting_header.dart';
+import '../widgets/section_header.dart';
 
 class HomeScreen extends StatefulWidget {
   final StorageService storageService;
+  final VoidCallback onNavigateToGoals;
+  final VoidCallback onNavigateToPie;
+  final VoidCallback onNavigateToTasks;
 
-  const HomeScreen({super.key, required this.storageService});
+  const HomeScreen({
+    super.key,
+    required this.storageService,
+    required this.onNavigateToGoals,
+    required this.onNavigateToPie,
+    required this.onNavigateToTasks,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
   final _uuid = const Uuid();
 
   @override
@@ -28,7 +38,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _initializeMockData() {
     if (widget.storageService.getAllGoals().isEmpty) {
-      // Daily goals
       widget.storageService.addGoal(Goal(
         id: _uuid.v4(),
         title: 'Morning meditation',
@@ -54,8 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
         type: GoalType.boolean,
         isDaily: true,
       ));
-
-      // Weekly goals
       widget.storageService.addGoal(Goal(
         id: _uuid.v4(),
         title: 'Gym sessions',
@@ -77,8 +84,6 @@ class _HomeScreenState extends State<HomeScreen> {
         target: 2,
         isWeekly: true,
       ));
-
-      // Long-term goals
       widget.storageService.addGoal(Goal(
         id: _uuid.v4(),
         title: 'Learn Spanish',
@@ -101,7 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ));
     }
 
-    // Add sample work tasks if empty
     if (widget.storageService.getAllTasks().isEmpty) {
       widget.storageService.addTask(Task(
         id: _uuid.v4(),
@@ -141,550 +145,577 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dailyGoals = widget.storageService.getDailyGoals();
+    final completedDaily = dailyGoals.where((g) => g.isCompleted).length;
+    final totalDaily = dailyGoals.length;
+    final activeTasks = widget.storageService
+        .getAllTasks()
+        .where((t) => t.status != TaskStatus.done)
+        .toList();
+    final longTermGoals = widget.storageService.getLongTermGoals();
+
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        title: Text(_getTitle()),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        actions: [
-          IconButton(
-            tooltip: 'Pie Program',
-            onPressed: () => context.push('/pie-program'),
-            icon: const Icon(Icons.pie_chart_outline_rounded),
-          ),
-        ],
-      ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          _buildGoalList(widget.storageService.getDailyGoals(), true),
-          _buildGoalList(widget.storageService.getWeeklyGoals(), false),
-          _buildLongTermList(),
-          _buildWorkBoard(),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() => _currentIndex = index);
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.today_outlined),
-            selectedIcon: Icon(Icons.today),
-            label: 'Today',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_view_week_outlined),
-            selectedIcon: Icon(Icons.calendar_view_week),
-            label: 'Weekly',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.flag_outlined),
-            selectedIcon: Icon(Icons.flag),
-            label: 'Long Term',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.work_outline),
-            selectedIcon: Icon(Icons.work),
-            label: 'Work',
-          ),
-        ],
-      ),
-      floatingActionButton: _currentIndex != 3
-          ? FloatingActionButton(
-              onPressed: () => _showAddGoalDialog(context),
-              child: const Icon(Icons.add),
-            )
-          : null,
-    );
-  }
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: ListView(
+          children: [
+            // Greeting
+            const GreetingHeader(),
+            const SizedBox(height: 12),
 
-  String _getTitle() {
-    switch (_currentIndex) {
-      case 0:
-        return 'Today';
-      case 1:
-        return 'This Week';
-      case 2:
-        return 'Long Term Goals';
-      case 3:
-        return 'Work Tasks';
-      default:
-        return 'Fortune';
-    }
-  }
-
-  Widget _buildGoalList(List<Goal> goals, bool isDaily) {
-    if (goals.isEmpty) {
-      return _buildEmptyState(isDaily ? 'daily' : 'weekly');
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      itemCount: goals.length,
-      itemBuilder: (context, index) {
-        final goal = goals[index];
-        return Dismissible(
-          key: Key(goal.id),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20),
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.red[400],
-              borderRadius: BorderRadius.circular(12),
+            // Today's Progress
+            _ProgressCard(
+              completed: completedDaily,
+              total: totalDaily,
+              onTap: widget.onNavigateToGoals,
             ),
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          onDismissed: (_) {
-            widget.storageService.deleteGoal(goal.id);
-            setState(() {});
-          },
-          child: GoalCard(
-            goal: goal,
-            onToggle: () {
-              goal.toggle();
-              setState(() {});
-            },
-            onIncrement: () {
-              goal.increment();
-              setState(() {});
-            },
-            onDecrement: () {
-              goal.decrement();
-              setState(() {});
-            },
-          ),
-        );
-      },
-    );
-  }
 
-  Widget _buildLongTermList() {
-    final goals = widget.storageService.getLongTermGoals();
-
-    if (goals.isEmpty) {
-      return _buildEmptyState('long-term');
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      itemCount: goals.length,
-      itemBuilder: (context, index) {
-        final goal = goals[index];
-        return Dismissible(
-          key: Key(goal.id),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20),
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.red[400],
-              borderRadius: BorderRadius.circular(12),
+            // Daily Goals Carousel
+            SectionHeader(
+              title: 'Daily Goals',
+              onSeeAll: widget.onNavigateToGoals,
             ),
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          onDismissed: (_) {
-            widget.storageService.deleteGoal(goal.id);
-            setState(() {});
-          },
-          child: GoalCard(
-            goal: goal,
-            onTap: () => _showMilestoneDialog(context, goal),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildWorkBoard() {
-    return KanbanBoard(
-      tasks: widget.storageService.getAllTasks(),
-      onTaskMoved: (task, newStatus) {
-        task.moveTo(newStatus);
-        setState(() {});
-      },
-      onAddTask: (status) => _showAddTaskDialog(context, status),
-      onTaskTap: (task) => _showEditTaskDialog(context, task),
-      onTaskDelete: (task) {
-        widget.storageService.deleteTask(task.id);
-        setState(() {});
-      },
-    );
-  }
-
-  Widget _buildEmptyState(String type) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.flag_outlined,
-            size: 64,
-            color: Colors.grey[300],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No $type goals yet',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[500],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap + to add your first goal',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[400],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddGoalDialog(BuildContext context) {
-    final titleController = TextEditingController();
-    final targetController = TextEditingController(text: '1');
-    GoalType selectedType = GoalType.boolean;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('New Goal'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Goal title',
-                    border: OutlineInputBorder(),
-                  ),
-                  autofocus: true,
-                ),
-                const SizedBox(height: 16),
-                const Text('Type'),
-                const SizedBox(height: 8),
-                SegmentedButton<GoalType>(
-                  segments: const [
-                    ButtonSegment(
-                      value: GoalType.boolean,
-                      label: Text('Yes/No'),
-                    ),
-                    ButtonSegment(
-                      value: GoalType.counter,
-                      label: Text('Counter'),
-                    ),
-                  ],
-                  selected: {selectedType},
-                  onSelectionChanged: (set) {
-                    setDialogState(() => selectedType = set.first);
+            if (dailyGoals.isEmpty)
+              _EmptyCarouselCard(
+                message: 'No daily goals yet',
+                color: AppColors.cardBlue,
+              )
+            else
+              SizedBox(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: dailyGoals.length,
+                  itemBuilder: (context, index) {
+                    final goal = dailyGoals[index];
+                    return _GoalCarouselCard(
+                      goal: goal,
+                      color: _goalCardColor(index),
+                      accentColor: _goalCardAccent(index),
+                      onTap: () {
+                        goal.toggle();
+                        setState(() {});
+                      },
+                    );
                   },
                 ),
-                if (selectedType == GoalType.counter) ...[
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: targetController,
-                    decoration: const InputDecoration(
-                      labelText: 'Target',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (titleController.text.trim().isEmpty) return;
+              ),
 
-                final goal = Goal(
-                  id: _uuid.v4(),
-                  title: titleController.text.trim(),
-                  type: _currentIndex == 2 ? GoalType.longTerm : selectedType,
-                  target: selectedType == GoalType.counter
-                      ? int.tryParse(targetController.text) ?? 1
-                      : 1,
-                  isDaily: _currentIndex == 0,
-                  isWeekly: _currentIndex == 1,
-                );
-
-                widget.storageService.addGoal(goal);
-                setState(() {});
-                Navigator.pop(context);
-              },
-              child: const Text('Add'),
+            // Pie Program Card
+            SectionHeader(
+              title: 'Your Schedule',
+              onSeeAll: widget.onNavigateToPie,
             ),
+            _PiePreviewCard(onTap: widget.onNavigateToPie),
+
+            // Active Tasks Carousel
+            SectionHeader(
+              title: 'Active Tasks',
+              onSeeAll: widget.onNavigateToTasks,
+            ),
+            if (activeTasks.isEmpty)
+              _EmptyCarouselCard(
+                message: 'All tasks done!',
+                color: AppColors.cardGreen,
+              )
+            else
+              SizedBox(
+                height: 100,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: activeTasks.length,
+                  itemBuilder: (context, index) {
+                    final task = activeTasks[index];
+                    return _TaskCarouselCard(task: task);
+                  },
+                ),
+              ),
+
+            // Long Term Goals
+            if (longTermGoals.isNotEmpty) ...[
+              SectionHeader(
+                title: 'Long Term Goals',
+                onSeeAll: widget.onNavigateToGoals,
+              ),
+              ...longTermGoals.map((goal) => _LongTermCard(goal: goal)),
+            ],
+
+            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-  void _showAddTaskDialog(BuildContext context, TaskStatus status) {
-    final titleController = TextEditingController();
-    final descController = TextEditingController();
+  Color _goalCardColor(int index) {
+    const colors = [
+      AppColors.cardGreen,
+      AppColors.cardPink,
+      AppColors.cardBlue,
+      AppColors.cardOrange,
+      AppColors.cardLavender,
+    ];
+    return colors[index % colors.length];
+  }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('New Task'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Task title',
-                  border: OutlineInputBorder(),
-                ),
-                autofocus: true,
+  Color _goalCardAccent(int index) {
+    const accents = [
+      AppColors.cardGreenAccent,
+      AppColors.cardPinkAccent,
+      AppColors.cardBlueAccent,
+      AppColors.cardOrangeAccent,
+      AppColors.cardLavenderAccent,
+    ];
+    return accents[index % accents.length];
+  }
+}
+
+// ---------- Progress Card ----------
+
+class _ProgressCard extends StatelessWidget {
+  final int completed;
+  final int total;
+  final VoidCallback onTap;
+
+  const _ProgressCard({
+    required this.completed,
+    required this.total,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = total > 0 ? completed / total : 0.0;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.cardGreen,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            // Progress ring
+            SizedBox(
+              width: 64,
+              height: 64,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 6,
+                    backgroundColor: Colors.white.withValues(alpha: 0.4),
+                    valueColor: const AlwaysStoppedAnimation(
+                        AppColors.cardGreenAccent),
+                    strokeCap: StrokeCap.round,
+                  ),
+                  Text(
+                    '$completed/$total',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descController,
-                decoration: const InputDecoration(
-                  labelText: 'Description (optional)',
-                  border: OutlineInputBorder(),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Today's Progress",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    completed == total && total > 0
+                        ? 'All done! Great job!'
+                        : '${total - completed} goals remaining',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (completed == total && total > 0)
+              const FortuneCharacter(
+                size: 50,
+                mood: CharacterMood.excited,
+                bodyColor: AppColors.cardGreenAccent,
+                accentColor: AppColors.primary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------- Goal Carousel Card ----------
+
+class _GoalCarouselCard extends StatelessWidget {
+  final Goal goal;
+  final Color color;
+  final Color accentColor;
+  final VoidCallback? onTap;
+
+  const _GoalCarouselCard({
+    required this.goal,
+    required this.color,
+    required this.accentColor,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 160,
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: goal.isCompleted
+                        ? accentColor
+                        : Colors.white.withValues(alpha: 0.6),
+                    border: goal.isCompleted
+                        ? null
+                        : Border.all(color: accentColor, width: 2),
+                  ),
+                  child: goal.isCompleted
+                      ? const Icon(Icons.check_rounded,
+                          size: 16, color: Colors.white)
+                      : null,
                 ),
-                maxLines: 2,
+                const Spacer(),
+                if (goal.type == GoalType.counter)
+                  Text(
+                    '${goal.progress}/${goal.target}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: accentColor,
+                    ),
+                  ),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              goal.title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (goal.type == GoalType.counter) ...[
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: goal.progressPercentage,
+                  minHeight: 4,
+                  backgroundColor: Colors.white.withValues(alpha: 0.5),
+                  valueColor: AlwaysStoppedAnimation(accentColor),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------- Pie Preview Card ----------
+
+class _PiePreviewCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _PiePreviewCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.cardPurple,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            // Mini pie icon
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.pie_chart_rounded,
+                color: AppColors.primary,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pie Program',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Manage your daily schedule',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 18,
+              color: AppColors.primary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------- Task Carousel Card ----------
+
+class _TaskCarouselCard extends StatelessWidget {
+  final Task task;
+
+  const _TaskCarouselCard({required this.task});
+
+  Color get _statusColor {
+    switch (task.status) {
+      case TaskStatus.todo:
+        return AppColors.statusTodoText;
+      case TaskStatus.inProgress:
+        return AppColors.statusInProgressText;
+      case TaskStatus.done:
+        return AppColors.statusDoneText;
+    }
+  }
+
+  Color get _statusBg {
+    switch (task.status) {
+      case TaskStatus.todo:
+        return AppColors.statusTodo;
+      case TaskStatus.inProgress:
+        return AppColors.statusInProgress;
+      case TaskStatus.done:
+        return AppColors.statusDone;
+    }
+  }
+
+  String get _statusLabel {
+    switch (task.status) {
+      case TaskStatus.todo:
+        return 'To Do';
+      case TaskStatus.inProgress:
+        return 'In Progress';
+      case TaskStatus.done:
+        return 'Done';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 180,
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: _statusBg,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              _statusLabel,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: _statusColor,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            task.title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (task.description != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              task.description!,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ---------- Long Term Card ----------
+
+class _LongTermCard extends StatelessWidget {
+  final Goal goal;
+
+  const _LongTermCard({required this.goal});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.flag_rounded,
+                size: 18,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  goal.title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Text(
+                '${goal.milestones.length}/${goal.target}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (titleController.text.trim().isEmpty) return;
-
-              final tasksInStatus = widget.storageService
-                  .getAllTasks()
-                  .where((t) => t.status == status)
-                  .length;
-
-              final task = Task(
-                id: _uuid.v4(),
-                title: titleController.text.trim(),
-                description: descController.text.trim().isEmpty
-                    ? null
-                    : descController.text.trim(),
-                status: status,
-                order: tasksInStatus,
-              );
-
-              widget.storageService.addTask(task);
-              setState(() {});
-              Navigator.pop(context);
-            },
-            child: const Text('Add'),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: goal.progressPercentage,
+              minHeight: 6,
+              backgroundColor: AppColors.surfaceVariant,
+              valueColor:
+                  const AlwaysStoppedAnimation(AppColors.accent),
+            ),
           ),
         ],
       ),
     );
   }
+}
 
-  void _showEditTaskDialog(BuildContext context, Task task) {
-    final titleController = TextEditingController(text: task.title);
-    final descController = TextEditingController(text: task.description ?? '');
+// ---------- Empty Carousel Card ----------
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+class _EmptyCarouselCard extends StatelessWidget {
+  final String message;
+  final Color color;
+
+  const _EmptyCarouselCard({required this.message, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 100,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(18),
       ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Edit Task',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Task title',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    if (titleController.text.trim().isEmpty) return;
-                    task.title = titleController.text.trim();
-                    task.description = descController.text.trim().isEmpty
-                        ? null
-                        : descController.text.trim();
-                    task.save();
-                    setState(() {});
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Save'),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showMilestoneDialog(BuildContext context, Goal goal) {
-    final milestoneController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        goal.title,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: milestoneController,
-                        decoration: const InputDecoration(
-                          hintText: 'Add a milestone...',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton.filled(
-                      onPressed: () {
-                        if (milestoneController.text.trim().isEmpty) return;
-                        goal.addMilestone(milestoneController.text.trim());
-                        milestoneController.clear();
-                        setSheetState(() {});
-                        setState(() {});
-                      },
-                      icon: const Icon(Icons.add),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                if (goal.milestones.isNotEmpty) ...[
-                  const Text(
-                    'Milestones',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 200),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: goal.milestones.length,
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          dense: true,
-                          leading: Icon(
-                            Icons.check_circle,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          title: Text(goal.milestones[index]),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline, size: 20),
-                            onPressed: () {
-                              goal.removeMilestone(index);
-                              setSheetState(() {});
-                              setState(() {});
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-              ],
-            ),
+      child: Center(
+        child: Text(
+          message,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondary,
           ),
         ),
       ),
