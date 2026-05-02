@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../models/task.dart';
+import '../theme/app_colors.dart';
 
 class KanbanBoard extends StatelessWidget {
   final List<Task> tasks;
@@ -36,7 +38,7 @@ class KanbanBoard extends StatelessWidget {
             onAddTask: () => onAddTask(TaskStatus.todo),
             onTaskTap: onTaskTap,
             onTaskDelete: onTaskDelete,
-            color: Colors.grey,
+            color: AppColors.statusTodoText,
           ),
         ),
         Expanded(
@@ -48,7 +50,7 @@ class KanbanBoard extends StatelessWidget {
             onAddTask: () => onAddTask(TaskStatus.inProgress),
             onTaskTap: onTaskTap,
             onTaskDelete: onTaskDelete,
-            color: Colors.blue,
+            color: AppColors.statusInProgressText,
           ),
         ),
         Expanded(
@@ -60,7 +62,7 @@ class KanbanBoard extends StatelessWidget {
             onAddTask: () => onAddTask(TaskStatus.done),
             onTaskTap: onTaskTap,
             onTaskDelete: onTaskDelete,
-            color: Colors.green,
+            color: AppColors.statusDoneText,
           ),
         ),
       ],
@@ -103,20 +105,25 @@ class _KanbanColumn extends StatelessWidget {
           decoration: BoxDecoration(
             color: isHovering
                 ? color.withValues(alpha: 0.1)
-                : Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
+                : AppColors.surface,
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isHovering ? color : Colors.grey.withValues(alpha: 0.2),
+              color: isHovering ? color : AppColors.divider,
               width: isHovering ? 2 : 1,
             ),
           ),
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(7),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -139,7 +146,10 @@ class _KanbanColumn extends StatelessWidget {
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(10),
@@ -202,8 +212,9 @@ class _TaskCard extends StatelessWidget {
           width: 120,
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.divider),
           ),
           child: Text(
             task.title,
@@ -213,10 +224,7 @@ class _TaskCard extends StatelessWidget {
           ),
         ),
       ),
-      childWhenDragging: Opacity(
-        opacity: 0.3,
-        child: _buildCard(context),
-      ),
+      childWhenDragging: Opacity(opacity: 0.3, child: _buildCard(context)),
       child: _buildCard(context),
     );
   }
@@ -230,7 +238,7 @@ class _TaskCard extends StatelessWidget {
         padding: const EdgeInsets.only(right: 8),
         margin: const EdgeInsets.only(bottom: 6),
         decoration: BoxDecoration(
-          color: Colors.red[400],
+          color: AppColors.error,
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Icon(Icons.delete, color: Colors.white, size: 18),
@@ -243,9 +251,9 @@ class _TaskCard extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 6),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
+            color: AppColors.surfaceElevated,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+            border: Border.all(color: AppColors.divider),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,7 +266,9 @@ class _TaskCard extends StatelessWidget {
                   decoration: task.status == TaskStatus.done
                       ? TextDecoration.lineThrough
                       : null,
-                  color: task.status == TaskStatus.done ? Colors.grey : null,
+                  color: task.status == TaskStatus.done
+                      ? AppColors.textTertiary
+                      : AppColors.textPrimary,
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -269,7 +279,7 @@ class _TaskCard extends StatelessWidget {
                   task.description!,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey[600],
+                    color: AppColors.textSecondary,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -297,18 +307,11 @@ class _AddTaskButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.add,
-              size: 16,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.add, size: 16, color: AppColors.textTertiary),
             const SizedBox(width: 4),
             Text(
               'Add',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[400],
-              ),
+              style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
             ),
           ],
         ),

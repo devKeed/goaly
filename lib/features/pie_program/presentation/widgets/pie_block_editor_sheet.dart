@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../theme/app_colors.dart';
 import '../../domain/entities/pie_block_category.dart';
 import '../../domain/entities/pie_time_block.dart';
 import 'pie_visuals.dart';
@@ -29,7 +30,7 @@ Future<PieBlockEditorResult?> showPieBlockEditorSheet({
     isScrollControlled: true,
     showDragHandle: true,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
     builder: (context) => _PieBlockEditorSheet(block: block),
   );
@@ -63,7 +64,9 @@ class _PieBlockEditorSheetState extends State<_PieBlockEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final start = TimeOfDay.fromDateTime(widget.block.startTime).format(context);
+    final start = TimeOfDay.fromDateTime(
+      widget.block.startTime,
+    ).format(context);
     final end = TimeOfDay.fromDateTime(widget.block.endTime).format(context);
 
     return Padding(
@@ -80,7 +83,7 @@ class _PieBlockEditorSheetState extends State<_PieBlockEditorSheet> {
             'Edit Block',
             style: TextStyle(
               fontSize: 20,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w900,
               color: PieVisuals.foreground,
             ),
           ),
@@ -104,16 +107,25 @@ class _PieBlockEditorSheetState extends State<_PieBlockEditorSheet> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: PieBlockCategory.values.map((category) {
-              final selected = _category == category;
-              final color = PieVisuals.gradientForCategory(category, widget.block.color).first;
-              return ChoiceChip(
-                label: Text(category.label),
-                selected: selected,
-                selectedColor: color.withValues(alpha: 0.25),
-                onSelected: (_) => setState(() => _category = category),
-              );
-            }).toList(growable: false),
+            children: PieBlockCategory.values
+                .map((category) {
+                  final selected = _category == category;
+                  final color = PieVisuals.gradientForCategory(
+                    category,
+                    widget.block.color,
+                  ).first;
+                  return ChoiceChip(
+                    label: Text(category.label),
+                    selected: selected,
+                    selectedColor: color.withValues(alpha: 0.25),
+                    backgroundColor: AppColors.surfaceVariant,
+                    side: BorderSide(
+                      color: selected ? color : AppColors.subtleDivider,
+                    ),
+                    onSelected: (_) => setState(() => _category = category),
+                  );
+                })
+                .toList(growable: false),
           ),
           const SizedBox(height: 16),
           Row(
@@ -126,7 +138,10 @@ class _PieBlockEditorSheetState extends State<_PieBlockEditorSheet> {
                         action: PieBlockEditorAction.delete,
                         title: _titleController.text.trim(),
                         category: _category,
-                        color: PieVisuals.gradientForCategory(_category, widget.block.color).first.toARGB32(),
+                        color: PieVisuals.gradientForCategory(
+                          _category,
+                          widget.block.color,
+                        ).first.toARGB32(),
                       ),
                     );
                   },
@@ -143,7 +158,10 @@ class _PieBlockEditorSheetState extends State<_PieBlockEditorSheet> {
                         action: PieBlockEditorAction.addAfter,
                         title: _titleController.text.trim(),
                         category: _category,
-                        color: PieVisuals.gradientForCategory(_category, widget.block.color).first.toARGB32(),
+                        color: PieVisuals.gradientForCategory(
+                          _category,
+                          widget.block.color,
+                        ).first.toARGB32(),
                       ),
                     );
                   },
@@ -167,7 +185,10 @@ class _PieBlockEditorSheetState extends State<_PieBlockEditorSheet> {
                     action: PieBlockEditorAction.save,
                     title: title,
                     category: _category,
-                    color: PieVisuals.gradientForCategory(_category, widget.block.color).first.toARGB32(),
+                    color: PieVisuals.gradientForCategory(
+                      _category,
+                      widget.block.color,
+                    ).first.toARGB32(),
                   ),
                 );
               },

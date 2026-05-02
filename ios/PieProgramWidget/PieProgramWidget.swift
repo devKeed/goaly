@@ -46,40 +46,51 @@ struct PieProgramWidgetEntryView: View {
   var body: some View {
     ZStack {
       LinearGradient(
-        colors: [Color(red: 0.07, green: 0.19, blue: 0.33), Color(red: 0.05, green: 0.11, blue: 0.19)],
+        colors: [
+          Color(red: 0.08, green: 0.08, blue: 0.09),
+          Color(red: 0.00, green: 0.00, blue: 0.00),
+        ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
       )
 
-      VStack(alignment: .leading, spacing: 8) {
-        Text("Pie Program")
-          .font(.caption)
-          .foregroundStyle(.white.opacity(0.85))
+      VStack(alignment: .leading, spacing: 10) {
+        HStack {
+          Text("Pie Program")
+            .font(.system(.caption, design: .rounded, weight: .bold))
+            .foregroundStyle(.white.opacity(0.72))
+          Spacer()
+          Circle()
+            .fill(Color(red: 0.20, green: 0.84, blue: 1.0))
+            .frame(width: 8, height: 8)
+        }
 
         HStack {
           ZStack {
             Circle()
-              .stroke(Color.white.opacity(0.2), lineWidth: 6)
+              .stroke(Color(red: 0.20, green: 0.84, blue: 1.0).opacity(0.18), lineWidth: 7)
             Circle()
               .trim(from: 0, to: entry.progress)
-              .stroke(Color.cyan, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+              .stroke(Color(red: 0.20, green: 0.84, blue: 1.0), style: StrokeStyle(lineWidth: 7, lineCap: .round))
               .rotationEffect(.degrees(-90))
           }
-          .frame(width: 44, height: 44)
+          .frame(width: 48, height: 48)
 
-          VStack(alignment: .leading, spacing: 2) {
+          VStack(alignment: .leading, spacing: 3) {
             Text(entry.currentTask)
-              .font(.headline)
+              .font(.system(.headline, design: .rounded, weight: .heavy))
               .foregroundStyle(.white)
               .lineLimit(1)
             Text(entry.remaining)
-              .font(.caption)
-              .foregroundStyle(.white.opacity(0.8))
+              .font(.system(.caption, design: .rounded, weight: .bold))
+              .foregroundStyle(.white.opacity(0.68))
           }
         }
+        Spacer(minLength: 0)
       }
       .padding(12)
     }
+    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     .widgetURL(URL(string: "fortune://app/pie-program"))
   }
 }

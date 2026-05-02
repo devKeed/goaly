@@ -25,18 +25,18 @@ class GoalCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: goal.isCompleted
-              ? AppColors.accent.withValues(alpha: 0.4)
-              : AppColors.divider,
+              ? AppColors.primary.withValues(alpha: 0.55)
+              : AppColors.subtleDivider,
         ),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           child: _buildContent(),
         ),
       ),
@@ -68,11 +68,14 @@ class GoalCard extends StatelessWidget {
               color: goal.isCompleted ? AppColors.accent : Colors.transparent,
               border: goal.isCompleted
                   ? null
-                  : Border.all(color: AppColors.textTertiary, width: 2),
+                  : Border.all(color: AppColors.primary, width: 2),
             ),
             child: goal.isCompleted
-                ? const Icon(Icons.check_rounded,
-                    size: 18, color: Colors.white)
+                ? const Icon(
+                    Icons.check_rounded,
+                    size: 18,
+                    color: AppColors.background,
+                  )
                 : null,
           ),
         ),
@@ -82,9 +85,8 @@ class GoalCard extends StatelessWidget {
             goal.title,
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w500,
-              decoration:
-                  goal.isCompleted ? TextDecoration.lineThrough : null,
+              fontWeight: FontWeight.w800,
+              decoration: goal.isCompleted ? TextDecoration.lineThrough : null,
               color: goal.isCompleted
                   ? AppColors.textTertiary
                   : AppColors.textPrimary,
@@ -107,7 +109,7 @@ class GoalCard extends StatelessWidget {
                 goal.title,
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w800,
                   color: goal.isCompleted
                       ? AppColors.accent
                       : AppColors.textPrimary,
@@ -163,11 +165,7 @@ class GoalCard extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Icon(
-              Icons.flag_rounded,
-              size: 20,
-              color: AppColors.primary,
-            ),
+            const Icon(Icons.flag_rounded, size: 20, color: AppColors.primary),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -192,7 +190,9 @@ class GoalCard extends StatelessWidget {
         ),
         if (goal.milestones.isNotEmpty) ...[
           const SizedBox(height: 12),
-          ...goal.milestones.take(3).map(
+          ...goal.milestones
+              .take(3)
+              .map(
                 (m) => Padding(
                   padding: const EdgeInsets.only(left: 28, bottom: 6),
                   child: Row(
@@ -236,8 +236,9 @@ class GoalCard extends StatelessWidget {
               value: goal.progressPercentage,
               minHeight: 6,
               backgroundColor: AppColors.surfaceVariant,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.primary,
+              ),
             ),
           ),
         ],
@@ -264,7 +265,7 @@ class _CounterButton extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: enabled
-              ? AppColors.primary.withValues(alpha: 0.1)
+              ? AppColors.primary.withValues(alpha: 0.14)
               : AppColors.surfaceVariant,
         ),
         child: Icon(

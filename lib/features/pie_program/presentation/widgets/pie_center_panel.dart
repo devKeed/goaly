@@ -22,9 +22,17 @@ class PieCenterPanel extends StatelessWidget {
     return Container(
       width: 182,
       height: 182,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.surface,
+        border: Border.all(color: AppColors.subtleDivider),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -33,10 +41,10 @@ class PieCenterPanel extends StatelessWidget {
           Text(
             currentTime,
             style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
+              fontSize: 29,
+              fontWeight: FontWeight.w900,
               color: PieVisuals.foreground,
-              letterSpacing: 0.4,
+              letterSpacing: 0,
             ),
           ),
           const SizedBox(height: 4),
@@ -45,7 +53,7 @@ class PieCenterPanel extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 15,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w800,
               color: PieVisuals.foreground,
             ),
           ),

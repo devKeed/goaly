@@ -1,19 +1,23 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
+import '../features/pie_program/application/controllers/pie_program_controller.dart';
+import '../features/steps/application/controllers/steps_controller.dart';
 import '../models/goal.dart';
 import '../models/task.dart';
 import '../services/storage_service.dart';
 import '../theme/app_colors.dart';
-import '../widgets/fortune_character.dart';
-import '../widgets/greeting_header.dart';
+import '../widgets/fitness_components.dart';
 import '../widgets/section_header.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   final StorageService storageService;
   final VoidCallback onNavigateToGoals;
   final VoidCallback onNavigateToPie;
   final VoidCallback onNavigateToTasks;
+  final VoidCallback onNavigateToSteps;
 
   const HomeScreen({
     super.key,
@@ -21,128 +25,14 @@ class HomeScreen extends StatefulWidget {
     required this.onNavigateToGoals,
     required this.onNavigateToPie,
     required this.onNavigateToTasks,
+    required this.onNavigateToSteps,
   });
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  final _uuid = const Uuid();
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeMockData();
-  }
-
-  void _initializeMockData() {
-    if (widget.storageService.getAllGoals().isEmpty) {
-      widget.storageService.addGoal(Goal(
-        id: _uuid.v4(),
-        title: 'Morning meditation',
-        type: GoalType.boolean,
-        isDaily: true,
-      ));
-      widget.storageService.addGoal(Goal(
-        id: _uuid.v4(),
-        title: 'Drink water',
-        type: GoalType.counter,
-        target: 8,
-        isDaily: true,
-      ));
-      widget.storageService.addGoal(Goal(
-        id: _uuid.v4(),
-        title: 'Read for 30 minutes',
-        type: GoalType.boolean,
-        isDaily: true,
-      ));
-      widget.storageService.addGoal(Goal(
-        id: _uuid.v4(),
-        title: 'No social media before noon',
-        type: GoalType.boolean,
-        isDaily: true,
-      ));
-      widget.storageService.addGoal(Goal(
-        id: _uuid.v4(),
-        title: 'Gym sessions',
-        type: GoalType.counter,
-        target: 5,
-        isWeekly: true,
-      ));
-      widget.storageService.addGoal(Goal(
-        id: _uuid.v4(),
-        title: 'Cook healthy meals',
-        type: GoalType.counter,
-        target: 4,
-        isWeekly: true,
-      ));
-      widget.storageService.addGoal(Goal(
-        id: _uuid.v4(),
-        title: 'Call a friend or family',
-        type: GoalType.counter,
-        target: 2,
-        isWeekly: true,
-      ));
-      widget.storageService.addGoal(Goal(
-        id: _uuid.v4(),
-        title: 'Learn Spanish',
-        type: GoalType.longTerm,
-        target: 10,
-        milestones: ['Completed Duolingo basics', 'Learned 100 words'],
-      ));
-      widget.storageService.addGoal(Goal(
-        id: _uuid.v4(),
-        title: 'Run a marathon',
-        type: GoalType.longTerm,
-        target: 5,
-        milestones: ['Ran first 5K'],
-      ));
-      widget.storageService.addGoal(Goal(
-        id: _uuid.v4(),
-        title: 'Save \$10,000',
-        type: GoalType.longTerm,
-        target: 10,
-      ));
-    }
-
-    if (widget.storageService.getAllTasks().isEmpty) {
-      widget.storageService.addTask(Task(
-        id: _uuid.v4(),
-        title: 'Review PR #42',
-        description: 'Check the new authentication flow',
-        status: TaskStatus.todo,
-        order: 0,
-      ));
-      widget.storageService.addTask(Task(
-        id: _uuid.v4(),
-        title: 'Fix login bug',
-        description: 'Users getting logged out randomly',
-        status: TaskStatus.todo,
-        order: 1,
-      ));
-      widget.storageService.addTask(Task(
-        id: _uuid.v4(),
-        title: 'Update API docs',
-        status: TaskStatus.inProgress,
-        order: 0,
-      ));
-      widget.storageService.addTask(Task(
-        id: _uuid.v4(),
-        title: 'Deploy v2.1',
-        description: 'Push to production',
-        status: TaskStatus.inProgress,
-        order: 1,
-      ));
-      widget.storageService.addTask(Task(
-        id: _uuid.v4(),
-        title: 'Setup CI/CD',
-        status: TaskStatus.done,
-        order: 0,
-      ));
-    }
-  }
-
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final dailyGoals = widget.storageService.getDailyGoals();
@@ -154,45 +44,87 @@ class _HomeScreenState extends State<HomeScreen> {
         .toList();
     final longTermGoals = widget.storageService.getLongTermGoals();
 
+    final stepsState = ref.watch(stepsControllerProvider).valueOrNull;
+    final todaySteps = stepsState?.stats.today;
+    final stepProgress = todaySteps?.progressPercentage ?? 0;
+    final stepValue = todaySteps == null
+        ? '0'
+        : NumberFormat.compact().format(todaySteps.steps);
+
+    final pieState = ref.watch(pieProgramControllerProvider).valueOrNull;
+    final scheduleProgress = pieState == null
+        ? 0.0
+        : ((pieState.now.hour * 60 + pieState.now.minute) / (24 * 60)).clamp(
+            0.0,
+            1.0,
+          );
+    final scheduleValue = pieState?.template == null
+        ? 'Setup'
+        : '${(scheduleProgress * 100).round()}%';
+
+    final goalProgress = totalDaily == 0 ? 0.0 : completedDaily / totalDaily;
+    final rings = [
+      ActivityRingSpec(
+        progress: goalProgress,
+        color: AppColors.primary,
+        trackColor: AppColors.primary.withValues(alpha: 0.17),
+        label: 'Goals',
+        value: '$completedDaily/$totalDaily',
+      ),
+      ActivityRingSpec(
+        progress: scheduleProgress,
+        color: AppColors.schedule,
+        trackColor: AppColors.schedule.withValues(alpha: 0.16),
+        label: 'Schedule',
+        value: scheduleValue,
+      ),
+      ActivityRingSpec(
+        progress: stepProgress,
+        color: AppColors.steps,
+        trackColor: AppColors.steps.withValues(alpha: 0.15),
+        label: 'Steps',
+        value: stepValue,
+      ),
+    ];
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: ListView(
+          padding: const EdgeInsets.only(bottom: 26),
           children: [
-            // Greeting
-            const GreetingHeader(),
-            const SizedBox(height: 12),
-
-            // Today's Progress
-            _ProgressCard(
-              completed: completedDaily,
-              total: totalDaily,
-              onTap: widget.onNavigateToGoals,
+            const FitnessHeader(title: 'Today', subtitle: 'Fortune'),
+            _ActivitySummaryCard(
+              rings: rings,
+              completedGoals: completedDaily,
+              totalGoals: totalDaily,
+              steps: todaySteps?.steps ?? 0,
+              onGoalsTap: widget.onNavigateToGoals,
+              onPieTap: widget.onNavigateToPie,
+              onStepsTap: widget.onNavigateToSteps,
             ),
-
-            // Daily Goals Carousel
             SectionHeader(
               title: 'Daily Goals',
               onSeeAll: widget.onNavigateToGoals,
             ),
             if (dailyGoals.isEmpty)
-              _EmptyCarouselCard(
-                message: 'No daily goals yet',
-                color: AppColors.cardBlue,
+              _EmptyHorizontalCard(
+                message: 'Add goals to fill your first ring.',
+                icon: CupertinoIcons.flag_fill,
+                color: AppColors.primary,
               )
             else
               SizedBox(
-                height: 120,
+                height: 132,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: dailyGoals.length,
                   itemBuilder: (context, index) {
                     final goal = dailyGoals[index];
                     return _GoalCarouselCard(
                       goal: goal,
-                      color: _goalCardColor(index),
-                      accentColor: _goalCardAccent(index),
+                      color: _goalAccent(index),
                       onTap: () {
                         goal.toggle();
                         setState(() {});
@@ -201,165 +133,218 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
               ),
-
-            // Pie Program Card
-            SectionHeader(
-              title: 'Your Schedule',
-              onSeeAll: widget.onNavigateToPie,
+            SectionHeader(title: 'Schedule', onSeeAll: widget.onNavigateToPie),
+            _FeatureCard(
+              title: 'Pie Program',
+              subtitle: pieState?.template == null
+                  ? 'Set up your daily template'
+                  : 'Keep the day moving',
+              value: scheduleValue,
+              icon: CupertinoIcons.chart_pie_fill,
+              color: AppColors.schedule,
+              onTap: widget.onNavigateToPie,
             ),
-            _PiePreviewCard(onTap: widget.onNavigateToPie),
-
-            // Active Tasks Carousel
+            SectionHeader(title: 'Steps', onSeeAll: widget.onNavigateToSteps),
+            _FeatureCard(
+              title: 'Daily Steps',
+              subtitle: todaySteps?.isGoalMet == true
+                  ? 'Daily goal reached'
+                  : 'Toward ${NumberFormat.decimalPattern().format(todaySteps?.goal ?? 10000)}',
+              value: NumberFormat.decimalPattern().format(
+                todaySteps?.steps ?? 0,
+              ),
+              icon: Icons.directions_walk_rounded,
+              color: AppColors.steps,
+              onTap: widget.onNavigateToSteps,
+            ),
             SectionHeader(
               title: 'Active Tasks',
               onSeeAll: widget.onNavigateToTasks,
             ),
             if (activeTasks.isEmpty)
-              _EmptyCarouselCard(
-                message: 'All tasks done!',
-                color: AppColors.cardGreen,
+              _EmptyHorizontalCard(
+                message: 'All tasks are complete.',
+                icon: CupertinoIcons.checkmark_circle_fill,
+                color: AppColors.steps,
               )
             else
               SizedBox(
-                height: 100,
+                height: 108,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: activeTasks.length,
                   itemBuilder: (context, index) {
-                    final task = activeTasks[index];
-                    return _TaskCarouselCard(task: task);
+                    return _TaskCarouselCard(task: activeTasks[index]);
                   },
                 ),
               ),
-
-            // Long Term Goals
             if (longTermGoals.isNotEmpty) ...[
               SectionHeader(
-                title: 'Long Term Goals',
+                title: 'Long Term',
                 onSeeAll: widget.onNavigateToGoals,
               ),
               ...longTermGoals.map((goal) => _LongTermCard(goal: goal)),
             ],
-
-            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-  Color _goalCardColor(int index) {
-    const colors = [
-      AppColors.cardGreen,
-      AppColors.cardPink,
-      AppColors.cardBlue,
-      AppColors.cardOrange,
-      AppColors.cardLavender,
-    ];
-    return colors[index % colors.length];
-  }
-
-  Color _goalCardAccent(int index) {
+  Color _goalAccent(int index) {
     const accents = [
-      AppColors.cardGreenAccent,
-      AppColors.cardPinkAccent,
-      AppColors.cardBlueAccent,
+      AppColors.primary,
+      AppColors.schedule,
+      AppColors.steps,
       AppColors.cardOrangeAccent,
-      AppColors.cardLavenderAccent,
+      AppColors.cardPurpleAccent,
     ];
     return accents[index % accents.length];
   }
 }
 
-// ---------- Progress Card ----------
-
-class _ProgressCard extends StatelessWidget {
-  final int completed;
-  final int total;
-  final VoidCallback onTap;
-
-  const _ProgressCard({
-    required this.completed,
-    required this.total,
-    required this.onTap,
+class _ActivitySummaryCard extends StatelessWidget {
+  const _ActivitySummaryCard({
+    required this.rings,
+    required this.completedGoals,
+    required this.totalGoals,
+    required this.steps,
+    required this.onGoalsTap,
+    required this.onPieTap,
+    required this.onStepsTap,
   });
+
+  final List<ActivityRingSpec> rings;
+  final int completedGoals;
+  final int totalGoals;
+  final int steps;
+  final VoidCallback onGoalsTap;
+  final VoidCallback onPieTap;
+  final VoidCallback onStepsTap;
 
   @override
   Widget build(BuildContext context) {
-    final progress = total > 0 ? completed / total : 0.0;
+    return FitnessPanel(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              ActivityRingGroup(
+                rings: rings,
+                size: 178,
+                center: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Day',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      '${(rings.first.progress * 100).round()}%',
+                      style: const TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(child: RingLegend(rings: rings)),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryButton(
+                  label: 'Goals',
+                  value: '$completedGoals/$totalGoals',
+                  color: AppColors.primary,
+                  onTap: onGoalsTap,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _SummaryButton(
+                  label: 'Pie',
+                  value: rings[1].value,
+                  color: AppColors.schedule,
+                  onTap: onPieTap,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _SummaryButton(
+                  label: 'Steps',
+                  value: NumberFormat.compact().format(steps),
+                  color: AppColors.steps,
+                  onTap: onStepsTap,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
 
+class _SummaryButton extends StatelessWidget {
+  const _SummaryButton({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         decoration: BoxDecoration(
-          color: AppColors.cardGreen,
-          borderRadius: BorderRadius.circular(20),
+          color: color.withValues(alpha: 0.13),
+          borderRadius: BorderRadius.circular(18),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Progress ring
-            SizedBox(
-              width: 64,
-              height: 64,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 6,
-                    backgroundColor: Colors.white.withValues(alpha: 0.4),
-                    valueColor: const AlwaysStoppedAnimation(
-                        AppColors.cardGreenAccent),
-                    strokeCap: StrokeCap.round,
-                  ),
-                  Text(
-                    '$completed/$total',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: color,
               ),
             ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Today's Progress",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    completed == total && total > 0
-                        ? 'All done! Great job!'
-                        : '${total - completed} goals remaining',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 2),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: AppColors.textPrimary,
               ),
             ),
-            if (completed == total && total > 0)
-              const FortuneCharacter(
-                size: 50,
-                mood: CharacterMood.excited,
-                bodyColor: AppColors.cardGreenAccent,
-                accentColor: AppColors.primary,
-              ),
           ],
         ),
       ),
@@ -367,53 +352,45 @@ class _ProgressCard extends StatelessWidget {
   }
 }
 
-// ---------- Goal Carousel Card ----------
-
 class _GoalCarouselCard extends StatelessWidget {
-  final Goal goal;
-  final Color color;
-  final Color accentColor;
-  final VoidCallback? onTap;
-
   const _GoalCarouselCard({
     required this.goal,
     required this.color,
-    required this.accentColor,
-    this.onTap,
+    required this.onTap,
   });
+
+  final Goal goal;
+  final Color color;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return FitnessPanel(
       onTap: onTap,
-      child: Container(
-        width: 160,
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(18),
-        ),
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.all(16),
+      color: AppColors.surfaceElevated,
+      child: SizedBox(
+        width: 156,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  width: 24,
-                  height: 24,
+                  width: 27,
+                  height: 27,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: goal.isCompleted
-                        ? accentColor
-                        : Colors.white.withValues(alpha: 0.6),
-                    border: goal.isCompleted
-                        ? null
-                        : Border.all(color: accentColor, width: 2),
+                    color: goal.isCompleted ? color : Colors.transparent,
+                    border: Border.all(color: color, width: 2),
                   ),
                   child: goal.isCompleted
-                      ? const Icon(Icons.check_rounded,
-                          size: 16, color: Colors.white)
+                      ? const Icon(
+                          CupertinoIcons.checkmark,
+                          size: 16,
+                          color: AppColors.background,
+                        )
                       : null,
                 ),
                 const Spacer(),
@@ -422,8 +399,8 @@ class _GoalCarouselCard extends StatelessWidget {
                     '${goal.progress}/${goal.target}',
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: accentColor,
+                      fontWeight: FontWeight.w900,
+                      color: color,
                     ),
                   ),
               ],
@@ -431,23 +408,24 @@ class _GoalCarouselCard extends StatelessWidget {
             const Spacer(),
             Text(
               goal.title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
             ),
             if (goal.type == GoalType.counter) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(999),
                 child: LinearProgressIndicator(
                   value: goal.progressPercentage,
-                  minHeight: 4,
-                  backgroundColor: Colors.white.withValues(alpha: 0.5),
-                  valueColor: AlwaysStoppedAnimation(accentColor),
+                  minHeight: 5,
+                  backgroundColor: AppColors.surfaceVariant,
+                  valueColor: AlwaysStoppedAnimation(color),
                 ),
               ),
             ],
@@ -458,266 +436,226 @@ class _GoalCarouselCard extends StatelessWidget {
   }
 }
 
-// ---------- Pie Preview Card ----------
+class _FeatureCard extends StatelessWidget {
+  const _FeatureCard({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
 
-class _PiePreviewCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String value;
+  final IconData icon;
+  final Color color;
   final VoidCallback onTap;
 
-  const _PiePreviewCard({required this.onTap});
-
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return FitnessPanel(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.cardPurple,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          children: [
-            // Mini pie icon
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.pie_chart_rounded,
-                color: AppColors.primary,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 16),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Pie Program',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Manage your daily schedule',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 18,
-              color: AppColors.primary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------- Task Carousel Card ----------
-
-class _TaskCarouselCard extends StatelessWidget {
-  final Task task;
-
-  const _TaskCarouselCard({required this.task});
-
-  Color get _statusColor {
-    switch (task.status) {
-      case TaskStatus.todo:
-        return AppColors.statusTodoText;
-      case TaskStatus.inProgress:
-        return AppColors.statusInProgressText;
-      case TaskStatus.done:
-        return AppColors.statusDoneText;
-    }
-  }
-
-  Color get _statusBg {
-    switch (task.status) {
-      case TaskStatus.todo:
-        return AppColors.statusTodo;
-      case TaskStatus.inProgress:
-        return AppColors.statusInProgress;
-      case TaskStatus.done:
-        return AppColors.statusDone;
-    }
-  }
-
-  String get _statusLabel {
-    switch (task.status) {
-      case TaskStatus.todo:
-        return 'To Do';
-      case TaskStatus.inProgress:
-        return 'In Progress';
-      case TaskStatus.done:
-        return 'Done';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 180,
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            width: 54,
+            height: 54,
             decoration: BoxDecoration(
-              color: _statusBg,
-              borderRadius: BorderRadius.circular(8),
+              color: color.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
             ),
-            child: Text(
-              _statusLabel,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: _statusColor,
-              ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(width: 12),
           Text(
-            task.title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              color: color,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
-          if (task.description != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              task.description!,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
         ],
       ),
     );
   }
 }
 
-// ---------- Long Term Card ----------
+class _TaskCarouselCard extends StatelessWidget {
+  const _TaskCarouselCard({required this.task});
 
-class _LongTermCard extends StatelessWidget {
-  final Goal goal;
+  final Task task;
 
-  const _LongTermCard({required this.goal});
+  Color get _statusColor {
+    return switch (task.status) {
+      TaskStatus.todo => AppColors.textSecondary,
+      TaskStatus.inProgress => AppColors.schedule,
+      TaskStatus.done => AppColors.steps,
+    };
+  }
+
+  String get _statusLabel {
+    return switch (task.status) {
+      TaskStatus.todo => 'To Do',
+      TaskStatus.inProgress => 'In Progress',
+      TaskStatus.done => 'Done',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.flag_rounded,
-                size: 18,
-                color: AppColors.primary,
+    return FitnessPanel(
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.all(15),
+      color: AppColors.surfaceElevated,
+      child: SizedBox(
+        width: 184,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _statusLabel,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                color: _statusColor,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  goal.title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+            ),
+            const Spacer(),
+            Text(
+              task.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
               ),
+            ),
+            if (task.description != null) ...[
+              const SizedBox(height: 4),
               Text(
-                '${goal.milestones.length}/${goal.target}',
+                task.description!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
                   color: AppColors.textSecondary,
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LongTermCard extends StatelessWidget {
+  const _LongTermCard({required this.goal});
+
+  final Goal goal;
+
+  @override
+  Widget build(BuildContext context) {
+    return FitnessPanel(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      child: Row(
+        children: [
+          const Icon(
+            CupertinoIcons.flag_fill,
+            color: AppColors.cardPurpleAccent,
           ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: goal.progressPercentage,
-              minHeight: 6,
-              backgroundColor: AppColors.surfaceVariant,
-              valueColor:
-                  const AlwaysStoppedAnimation(AppColors.accent),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              goal.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
+          if (goal.target > 0)
+            Text(
+              '${goal.milestones.length}/${goal.target}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                color: AppColors.textSecondary,
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
-// ---------- Empty Carousel Card ----------
+class _EmptyHorizontalCard extends StatelessWidget {
+  const _EmptyHorizontalCard({
+    required this.message,
+    required this.icon,
+    required this.color,
+  });
 
-class _EmptyCarouselCard extends StatelessWidget {
   final String message;
+  final IconData icon;
   final Color color;
-
-  const _EmptyCarouselCard({required this.message, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 100,
+    return FitnessPanel(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Center(
-        child: Text(
-          message,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

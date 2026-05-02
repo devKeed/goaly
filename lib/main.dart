@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:home_widget/home_widget.dart';
 
 import 'features/pie_program/infrastructure/services/pie_background_scheduler.dart';
 import 'features/pie_program/presentation/screens/pie_program_screen.dart';
+import 'features/steps/presentation/screens/steps_screen.dart';
 import 'screens/goals_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/tasks_screen.dart';
@@ -23,11 +25,7 @@ Future<void> main() async {
   await backgroundScheduler.initialize();
   await backgroundScheduler.schedulePeriodicWidgetRefresh();
 
-  runApp(
-    ProviderScope(
-      child: FortuneApp(storageService: storageService),
-    ),
-  );
+  runApp(ProviderScope(child: FortuneApp(storageService: storageService)));
 }
 
 class FortuneApp extends StatefulWidget {
@@ -46,8 +44,9 @@ class _FortuneAppState extends State<FortuneApp> {
   @override
   void initState() {
     super.initState();
-    _widgetClickSubscription =
-        HomeWidget.widgetClicked.listen(_handleWidgetUri);
+    _widgetClickSubscription = HomeWidget.widgetClicked.listen(
+      _handleWidgetUri,
+    );
     HomeWidget.initiallyLaunchedFromHomeWidget().then(_handleWidgetUri);
   }
 
@@ -71,14 +70,26 @@ class _FortuneAppState extends State<FortuneApp> {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
+        brightness: Brightness.dark,
+        visualDensity: VisualDensity.standard,
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.primary,
-          brightness: Brightness.light,
+          brightness: Brightness.dark,
           primary: AppColors.primary,
           secondary: AppColors.accent,
+          error: AppColors.error,
           surface: AppColors.surface,
+          onPrimary: AppColors.background,
+          onSurface: AppColors.textPrimary,
         ),
         scaffoldBackgroundColor: AppColors.background,
+        canvasColor: AppColors.background,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        textTheme: ThemeData.dark().textTheme.apply(
+          bodyColor: AppColors.textPrimary,
+          displayColor: AppColors.textPrimary,
+        ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -86,8 +97,9 @@ class _FortuneAppState extends State<FortuneApp> {
           centerTitle: false,
           titleTextStyle: TextStyle(
             color: AppColors.textPrimary,
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
+            fontSize: 30,
+            fontWeight: FontWeight.w900,
+            height: 1.05,
           ),
           iconTheme: IconThemeData(color: AppColors.textPrimary),
         ),
@@ -95,71 +107,73 @@ class _FortuneAppState extends State<FortuneApp> {
           color: AppColors.surface,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: AppColors.subtleDivider),
           ),
         ),
         navigationBarTheme: NavigationBarThemeData(
-          backgroundColor: AppColors.surface,
+          backgroundColor: AppColors.background.withValues(alpha: 0.96),
           elevation: 0,
-          height: 70,
+          height: 68,
           indicatorColor: AppColors.navIndicator,
           iconTheme: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return const IconThemeData(
-                color: AppColors.primary,
-                size: 24,
-              );
+              return const IconThemeData(color: AppColors.primary, size: 23);
             }
             return const IconThemeData(
               color: AppColors.navUnselected,
-              size: 24,
+              size: 23,
             );
           }),
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
               return const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
                 color: AppColors.primary,
               );
             }
             return const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
               color: AppColors.navUnselected,
             );
           }),
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.textPrimary,
           elevation: 0,
           shape: CircleBorder(),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: AppColors.surfaceVariant,
+          fillColor: AppColors.surfaceElevated,
+          hintStyle: const TextStyle(color: AppColors.textTertiary),
+          labelStyle: const TextStyle(color: AppColors.textSecondary),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: AppColors.subtleDivider),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
           ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
+            foregroundColor: AppColors.textPrimary,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(999),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           ),
@@ -169,21 +183,40 @@ class _FortuneAppState extends State<FortuneApp> {
             foregroundColor: AppColors.primary,
             side: const BorderSide(color: AppColors.primary),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(999),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           ),
         ),
         dialogTheme: DialogThemeData(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
           ),
-          backgroundColor: AppColors.surface,
+          backgroundColor: AppColors.surfaceElevated,
         ),
         bottomSheetTheme: const BottomSheetThemeData(
-          backgroundColor: AppColors.surface,
+          backgroundColor: AppColors.surfaceElevated,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+        ),
+        segmentedButtonTheme: SegmentedButtonThemeData(
+          style: ButtonStyle(
+            backgroundColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return AppColors.primary;
+              }
+              return AppColors.surfaceVariant;
+            }),
+            foregroundColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return AppColors.textPrimary;
+              }
+              return AppColors.textSecondary;
+            }),
+            side: const WidgetStatePropertyAll(
+              BorderSide(color: AppColors.subtleDivider),
+            ),
           ),
         ),
       ),
@@ -211,15 +244,22 @@ class FortuneShell extends StatefulWidget {
 
 class _FortuneShellState extends State<FortuneShell> {
   late int _currentIndex;
+  late bool _stepsVisited;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _stepsVisited = widget.initialIndex == 4;
   }
 
   void _switchTab(int index) {
-    setState(() => _currentIndex = index);
+    setState(() {
+      _currentIndex = index;
+      if (index == 4) {
+        _stepsVisited = true;
+      }
+    });
   }
 
   @override
@@ -233,10 +273,12 @@ class _FortuneShellState extends State<FortuneShell> {
             onNavigateToGoals: () => _switchTab(1),
             onNavigateToPie: () => _switchTab(2),
             onNavigateToTasks: () => _switchTab(3),
+            onNavigateToSteps: () => _switchTab(4),
           ),
           GoalsScreen(storageService: widget.storageService),
           const PieProgramScreen(),
           TasksScreen(storageService: widget.storageService),
+          _stepsVisited ? const StepsScreen() : const SizedBox.shrink(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -244,24 +286,29 @@ class _FortuneShellState extends State<FortuneShell> {
         onDestinationSelected: _switchTab,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
+            icon: Icon(CupertinoIcons.house),
+            selectedIcon: Icon(CupertinoIcons.house_fill),
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.flag_outlined),
-            selectedIcon: Icon(Icons.flag_rounded),
+            icon: Icon(CupertinoIcons.flag),
+            selectedIcon: Icon(CupertinoIcons.flag_fill),
             label: 'Goals',
           ),
           NavigationDestination(
-            icon: Icon(Icons.pie_chart_outline_rounded),
-            selectedIcon: Icon(Icons.pie_chart_rounded),
+            icon: Icon(CupertinoIcons.chart_pie),
+            selectedIcon: Icon(CupertinoIcons.chart_pie_fill),
             label: 'Pie',
           ),
           NavigationDestination(
-            icon: Icon(Icons.check_circle_outline_rounded),
-            selectedIcon: Icon(Icons.check_circle_rounded),
+            icon: Icon(CupertinoIcons.checkmark_circle),
+            selectedIcon: Icon(CupertinoIcons.checkmark_circle_fill),
             label: 'Tasks',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.directions_walk_outlined),
+            selectedIcon: Icon(Icons.directions_walk_rounded),
+            label: 'Steps',
           ),
         ],
       ),

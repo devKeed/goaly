@@ -1,10 +1,11 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/goal.dart';
 import '../services/storage_service.dart';
 import '../theme/app_colors.dart';
-import '../widgets/fortune_character.dart';
+import '../widgets/fitness_components.dart';
 import '../widgets/goal_card.dart';
 
 class GoalsScreen extends StatefulWidget {
@@ -39,98 +40,110 @@ class _GoalsScreenState extends State<GoalsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Goals'),
-      ),
-      body: Column(
-        children: [
-          // Chip tabs
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Row(
-              children: List.generate(_tabs.length, (i) {
-                final selected = _selectedTab == i;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedTab = i),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: selected ? AppColors.primary : AppColors.surfaceVariant,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        _tabs[i],
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: selected ? Colors.white : AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-          // Goal list
-          Expanded(
-            child: _currentGoals.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: _currentGoals.length,
-                    itemBuilder: (context, index) {
-                      final goal = _currentGoals[index];
-                      return Dismissible(
-                        key: Key(goal.id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 6,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const FitnessHeader(title: 'Goals', subtitle: 'Rings'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(_tabs.length, (i) {
+                    final selected = _selectedTab == i;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedTab = i),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.error,
-                            borderRadius: BorderRadius.circular(16),
+                            color: selected
+                                ? AppColors.primary
+                                : AppColors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: selected
+                                  ? AppColors.primary
+                                  : AppColors.subtleDivider,
+                            ),
                           ),
-                          child: const Icon(Icons.delete_rounded,
-                              color: Colors.white),
+                          child: Text(
+                            _tabs[i],
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: selected
+                                  ? AppColors.textPrimary
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
                         ),
-                        onDismissed: (_) {
-                          widget.storageService.deleteGoal(goal.id);
-                          setState(() {});
-                        },
-                        child: GoalCard(
-                          goal: goal,
-                          onToggle: () {
-                            goal.toggle();
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ),
+            Expanded(
+              child: _currentGoals.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: _currentGoals.length,
+                      itemBuilder: (context, index) {
+                        final goal = _currentGoals[index];
+                        return Dismissible(
+                          key: Key(goal.id),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.error,
+                              borderRadius: BorderRadius.circular(22),
+                            ),
+                            child: const Icon(
+                              Icons.delete_rounded,
+                              color: Colors.white,
+                            ),
+                          ),
+                          onDismissed: (_) {
+                            widget.storageService.deleteGoal(goal.id);
                             setState(() {});
                           },
-                          onIncrement: () {
-                            goal.increment();
-                            setState(() {});
-                          },
-                          onDecrement: () {
-                            goal.decrement();
-                            setState(() {});
-                          },
-                          onTap: goal.type == GoalType.longTerm
-                              ? () => _showMilestoneSheet(context, goal)
-                              : null,
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
+                          child: GoalCard(
+                            goal: goal,
+                            onToggle: () {
+                              goal.toggle();
+                              setState(() {});
+                            },
+                            onIncrement: () {
+                              goal.increment();
+                              setState(() {});
+                            },
+                            onDecrement: () {
+                              goal.decrement();
+                              setState(() {});
+                            },
+                            onTap: goal.type == GoalType.longTerm
+                                ? () => _showMilestoneSheet(context, goal)
+                                : null,
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddGoalDialog(context),
@@ -140,43 +153,20 @@ class _GoalsScreenState extends State<GoalsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          FortuneCharacter(
-            size: 100,
-            mood: CharacterMood.sad,
-            bodyColor: AppColors.cardBlue,
-            accentColor: AppColors.cardBlueAccent,
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'No goals yet',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Tap + to add your first goal!',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
+    return const FitnessEmptyState(
+      title: 'No goals yet',
+      message: 'Tap + to add your first goal.',
+      icon: CupertinoIcons.flag_fill,
+      color: AppColors.primary,
     );
   }
 
   void _showAddGoalDialog(BuildContext context) {
     final titleController = TextEditingController();
     final targetController = TextEditingController(text: '1');
-    GoalType selectedType =
-        _selectedTab == 2 ? GoalType.longTerm : GoalType.boolean;
+    GoalType selectedType = _selectedTab == 2
+        ? GoalType.longTerm
+        : GoalType.boolean;
 
     showDialog(
       context: context,
@@ -302,8 +292,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
                     Expanded(
                       child: TextField(
                         controller: milestoneController,
-                        decoration:
-                            const InputDecoration(hintText: 'Add a milestone...'),
+                        decoration: const InputDecoration(
+                          hintText: 'Add a milestone',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -344,8 +335,10 @@ class _GoalsScreenState extends State<GoalsScreen> {
                           ),
                           title: Text(goal.milestones[index]),
                           trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline_rounded,
-                                size: 20),
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              size: 20,
+                            ),
                             onPressed: () {
                               goal.removeMilestone(index);
                               setSheetState(() {});

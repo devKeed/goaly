@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../theme/app_colors.dart';
+import '../../../../widgets/fitness_components.dart';
 import '../../../../widgets/fortune_character.dart';
 import '../../application/controllers/pie_program_controller.dart';
 import '../../application/controllers/pie_program_view_state.dart';
@@ -28,8 +29,16 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
   TimeOfDay _sleepStart = const TimeOfDay(hour: 23, minute: 0);
   TimeOfDay _sleepEnd = const TimeOfDay(hour: 7, minute: 0);
   final List<_TaskDraft> _draftTasks = [
-    _TaskDraft(title: 'Work', category: PieBlockCategory.work, durationMinutes: 480),
-    _TaskDraft(title: 'Gym', category: PieBlockCategory.fitness, durationMinutes: 60),
+    _TaskDraft(
+      title: 'Work',
+      category: PieBlockCategory.work,
+      durationMinutes: 480,
+    ),
+    _TaskDraft(
+      title: 'Gym',
+      category: PieBlockCategory.fitness,
+      durationMinutes: 60,
+    ),
   ];
 
   @override
@@ -57,18 +66,6 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Pie Program'),
-        actions: [
-          IconButton(
-            tooltip: 'Save as template',
-            onPressed: () => ref
-                .read(pieProgramControllerProvider.notifier)
-                .saveCurrentAsTemplate(),
-            icon: const Icon(Icons.bookmark_add_outlined),
-          ),
-        ],
-      ),
       body: asyncState.when(
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
@@ -80,7 +77,7 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
               const FortuneCharacter(
                 size: 80,
                 mood: CharacterMood.sad,
-                bodyColor: AppColors.cardPink,
+                bodyColor: AppColors.surfaceVariant,
                 accentColor: AppColors.cardPinkAccent,
               ),
               const SizedBox(height: 16),
@@ -104,25 +101,18 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
 
   Widget _buildOnboarding(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       children: [
-        // Character illustration
-        const Center(
-          child: FortuneCharacter(
-            size: 90,
-            mood: CharacterMood.waving,
-            bodyColor: AppColors.cardPurple,
-            accentColor: AppColors.primary,
+        const SafeArea(
+          bottom: false,
+          child: FitnessHeader(
+            title: 'Pie Program',
+            subtitle: 'Schedule',
+            padding: EdgeInsets.fromLTRB(0, 16, 0, 10),
           ),
         ),
-        const SizedBox(height: 20),
-        Container(
+        FitnessPanel(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.divider),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -193,7 +183,7 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
                     children: [
                       Expanded(
                         child: InkWell(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(8),
                           onTap: () => _showTaskDraftDialog(
                             context,
                             existingTask: task,
@@ -206,7 +196,10 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
                             ),
                             decoration: BoxDecoration(
                               color: AppColors.surfaceVariant,
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: AppColors.subtleDivider,
+                              ),
                             ),
                             child: Text(
                               '${task.title} · ${task.durationMinutes}m',
@@ -229,7 +222,8 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
                       ),
                       IconButton(
                         tooltip: 'Delete',
-                        onPressed: () => setState(() => _draftTasks.removeAt(index)),
+                        onPressed: () =>
+                            setState(() => _draftTasks.removeAt(index)),
                         icon: const Icon(Icons.close_rounded),
                       ),
                     ],
@@ -249,9 +243,12 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () async {
-                    final controller = ref.read(pieProgramControllerProvider.notifier);
+                    final controller = ref.read(
+                      pieProgramControllerProvider.notifier,
+                    );
                     await controller.createTemplateFromSetup(
-                      sleepStartMinute: _sleepStart.hour * 60 + _sleepStart.minute,
+                      sleepStartMinute:
+                          _sleepStart.hour * 60 + _sleepStart.minute,
                       sleepEndMinute: _sleepEnd.hour * 60 + _sleepEnd.minute,
                       recurringTasks: _draftTasks
                           .map(
@@ -276,7 +273,10 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
 
   Widget _buildContent(BuildContext context, PieProgramViewState data) {
     final rulesEngine = ref.read(pieRulesEngineProvider);
-    final currentBlock = rulesEngine.currentBlock(data.schedule.blocks, data.now);
+    final currentBlock = rulesEngine.currentBlock(
+      data.schedule.blocks,
+      data.now,
+    );
     final nextBlock = rulesEngine.nextBlock(data.schedule.blocks, data.now);
 
     final currentTime = DateFormat('HH:mm:ss').format(data.now);
@@ -285,11 +285,27 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
         : '${PieTimeUtils.minutesUntil(data.now, currentBlock.endTime)}m left';
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(pieProgramControllerProvider.notifier).refreshAfterAppResume(),
+      onRefresh: () => ref
+          .read(pieProgramControllerProvider.notifier)
+          .refreshAfterAppResume(),
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
         children: [
-          const SizedBox(height: 6),
+          SafeArea(
+            bottom: false,
+            child: FitnessHeader(
+              title: 'Pie Program',
+              subtitle: 'Schedule',
+              padding: const EdgeInsets.fromLTRB(0, 16, 0, 10),
+              trailing: IconButton(
+                tooltip: 'Save as template',
+                onPressed: () => ref
+                    .read(pieProgramControllerProvider.notifier)
+                    .saveCurrentAsTemplate(),
+                icon: const Icon(Icons.bookmark_add_outlined),
+              ),
+            ),
+          ),
           Center(
             child: SizedBox(
               width: 340,
@@ -304,14 +320,18 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
                       blocks: data.schedule.blocks,
                       now: data.now,
                       onBoundaryResize: (boundaryIndex, delta) {
-                        return ref.read(pieProgramControllerProvider.notifier).resizeBoundary(
+                        return ref
+                            .read(pieProgramControllerProvider.notifier)
+                            .resizeBoundary(
                               boundaryIndex: boundaryIndex,
                               deltaMinutes: delta,
                             );
                       },
                       onBlockTap: (block) => _editBlock(context, block),
                       onBlockLongPress: (block) {
-                        ref.read(pieProgramControllerProvider.notifier).toggleLock(block.id);
+                        ref
+                            .read(pieProgramControllerProvider.notifier)
+                            .toggleLock(block.id);
                       },
                     ),
                   ),
@@ -326,12 +346,9 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
             ),
           ),
           const SizedBox(height: 14),
-          Container(
+          FitnessPanel(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.cardLavender,
-              borderRadius: BorderRadius.circular(16),
-            ),
+            color: AppColors.surfaceElevated,
             child: Text(
               nextBlock == null
                   ? 'No upcoming task before midnight.'
@@ -355,7 +372,10 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
   }
 
   Future<void> _editBlock(BuildContext context, PieTimeBlock block) async {
-    final result = await showPieBlockEditorSheet(context: context, block: block);
+    final result = await showPieBlockEditorSheet(
+      context: context,
+      block: block,
+    );
     if (result == null) {
       return;
     }
@@ -386,8 +406,11 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
     int? editIndex,
   }) async {
     final isEditing = existingTask != null && editIndex != null;
-    final titleController = TextEditingController(text: existingTask?.title ?? '');
-    PieBlockCategory selectedCategory = existingTask?.category ?? PieBlockCategory.work;
+    final titleController = TextEditingController(
+      text: existingTask?.title ?? '',
+    );
+    PieBlockCategory selectedCategory =
+        existingTask?.category ?? PieBlockCategory.work;
     final durationController = TextEditingController(
       text: (existingTask?.durationMinutes ?? 60).toString(),
     );
@@ -408,7 +431,9 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
               TextField(
                 controller: durationController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(hintText: 'Duration (minutes)'),
+                decoration: const InputDecoration(
+                  hintText: 'Duration (minutes)',
+                ),
               ),
               const SizedBox(height: 10),
               DropdownButtonFormField<PieBlockCategory>(
@@ -440,7 +465,8 @@ class _PieProgramScreenState extends ConsumerState<PieProgramScreen>
                 if (title.isEmpty) {
                   return;
                 }
-                final duration = (int.tryParse(durationController.text) ?? 60).clamp(15, 1440);
+                final duration = (int.tryParse(durationController.text) ?? 60)
+                    .clamp(15, 1440);
                 setState(() {
                   final updated = _TaskDraft(
                     title: title,
@@ -491,11 +517,12 @@ class _TimeTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(8),
       child: Ink(
         decoration: BoxDecoration(
           color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.subtleDivider),
         ),
         padding: const EdgeInsets.all(12),
         child: Column(

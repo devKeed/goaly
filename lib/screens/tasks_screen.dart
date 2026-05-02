@@ -1,10 +1,11 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/task.dart';
 import '../services/storage_service.dart';
 import '../theme/app_colors.dart';
-import '../widgets/fortune_character.dart';
+import '../widgets/fitness_components.dart';
 
 class TasksScreen extends StatefulWidget {
   final StorageService storageService;
@@ -29,73 +30,72 @@ class _TasksScreenState extends State<TasksScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Tasks'),
-      ),
-      body: Column(
-        children: [
-          // Filter chips
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Row(
-              children: [
-                _FilterChip(
-                  label: 'All',
-                  selected: _filter == null,
-                  onTap: () => setState(() => _filter = null),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const FitnessHeader(title: 'Tasks', subtitle: 'Focus'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _FilterChip(
+                      label: 'All',
+                      selected: _filter == null,
+                      onTap: () => setState(() => _filter = null),
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterChip(
+                      label: 'To Do',
+                      selected: _filter == TaskStatus.todo,
+                      color: AppColors.statusTodo,
+                      onTap: () => setState(() => _filter = TaskStatus.todo),
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterChip(
+                      label: 'In Progress',
+                      selected: _filter == TaskStatus.inProgress,
+                      color: AppColors.statusInProgress,
+                      onTap: () =>
+                          setState(() => _filter = TaskStatus.inProgress),
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterChip(
+                      label: 'Done',
+                      selected: _filter == TaskStatus.done,
+                      color: AppColors.statusDone,
+                      onTap: () => setState(() => _filter = TaskStatus.done),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: 'To Do',
-                  selected: _filter == TaskStatus.todo,
-                  color: AppColors.statusTodo,
-                  selectedColor: AppColors.statusTodoText,
-                  onTap: () => setState(() => _filter = TaskStatus.todo),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: 'In Progress',
-                  selected: _filter == TaskStatus.inProgress,
-                  color: AppColors.statusInProgress,
-                  selectedColor: AppColors.statusInProgressText,
-                  onTap: () => setState(() => _filter = TaskStatus.inProgress),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: 'Done',
-                  selected: _filter == TaskStatus.done,
-                  color: AppColors.statusDone,
-                  selectedColor: AppColors.statusDoneText,
-                  onTap: () => setState(() => _filter = TaskStatus.done),
-                ),
-              ],
+              ),
             ),
-          ),
-          // Task list
-          Expanded(
-            child: _filteredTasks.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: _filteredTasks.length,
-                    itemBuilder: (context, index) {
-                      final task = _filteredTasks[index];
-                      return _TaskListItem(
-                        task: task,
-                        onStatusChange: () {
-                          _cycleStatus(task);
-                          setState(() {});
-                        },
-                        onTap: () => _showEditSheet(context, task),
-                        onDelete: () {
-                          widget.storageService.deleteTask(task.id);
-                          setState(() {});
-                        },
-                      );
-                    },
-                  ),
-          ),
-        ],
+            Expanded(
+              child: _filteredTasks.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: _filteredTasks.length,
+                      itemBuilder: (context, index) {
+                        final task = _filteredTasks[index];
+                        return _TaskListItem(
+                          task: task,
+                          onStatusChange: () {
+                            _cycleStatus(task);
+                            setState(() {});
+                          },
+                          onTap: () => _showEditSheet(context, task),
+                          onDelete: () {
+                            widget.storageService.deleteTask(task.id);
+                            setState(() {});
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddTaskDialog(context),
@@ -105,35 +105,11 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          FortuneCharacter(
-            size: 100,
-            mood: CharacterMood.waving,
-            bodyColor: AppColors.cardOrange,
-            accentColor: AppColors.cardOrangeAccent,
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'No tasks here',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Tap + to add a task!',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
+    return const FitnessEmptyState(
+      title: 'No tasks here',
+      message: 'Tap + to add a task.',
+      icon: CupertinoIcons.checkmark_circle_fill,
+      color: AppColors.cardOrangeAccent,
     );
   }
 
@@ -168,8 +144,9 @@ class _TasksScreenState extends State<TasksScreen> {
               const SizedBox(height: 16),
               TextField(
                 controller: descController,
-                decoration:
-                    const InputDecoration(hintText: 'Description (optional)'),
+                decoration: const InputDecoration(
+                  hintText: 'Description (optional)',
+                ),
                 maxLines: 2,
               ),
             ],
@@ -183,10 +160,6 @@ class _TasksScreenState extends State<TasksScreen> {
           FilledButton(
             onPressed: () {
               if (titleController.text.trim().isEmpty) return;
-              final tasksCount = widget.storageService
-                  .getAllTasks()
-                  .where((t) => t.status == TaskStatus.todo)
-                  .length;
               final task = Task(
                 id: _uuid.v4(),
                 title: titleController.text.trim(),
@@ -194,7 +167,7 @@ class _TasksScreenState extends State<TasksScreen> {
                     ? null
                     : descController.text.trim(),
                 status: TaskStatus.todo,
-                order: tasksCount,
+                order: 0,
               );
               widget.storageService.addTask(task);
               setState(() {});
@@ -209,8 +182,7 @@ class _TasksScreenState extends State<TasksScreen> {
 
   void _showEditSheet(BuildContext context, Task task) {
     final titleController = TextEditingController(text: task.title);
-    final descController =
-        TextEditingController(text: task.description ?? '');
+    final descController = TextEditingController(text: task.description ?? '');
 
     showModalBottomSheet(
       context: context,
@@ -284,14 +256,12 @@ class _FilterChip extends StatelessWidget {
   final String label;
   final bool selected;
   final Color? color;
-  final Color? selectedColor;
   final VoidCallback onTap;
 
   const _FilterChip({
     required this.label,
     required this.selected,
     this.color,
-    this.selectedColor,
     required this.onTap,
   });
 
@@ -304,16 +274,19 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected
-              ? (selectedColor ?? AppColors.primary)
-              : (color ?? AppColors.surfaceVariant),
-          borderRadius: BorderRadius.circular(16),
+              ? AppColors.primary
+              : (color ?? AppColors.surfaceElevated),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.subtleDivider,
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : AppColors.textSecondary,
+            color: selected ? AppColors.textPrimary : AppColors.textSecondary,
           ),
         ),
       ),
@@ -378,7 +351,7 @@ class _TaskListItem extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
         decoration: BoxDecoration(
           color: AppColors.error,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(22),
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.white),
       ),
@@ -390,8 +363,8 @@ class _TaskListItem extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.divider),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.subtleDivider),
           ),
           child: Row(
             children: [
@@ -403,7 +376,7 @@ class _TaskListItem extends StatelessWidget {
                       task.title,
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w800,
                         color: task.status == TaskStatus.done
                             ? AppColors.textTertiary
                             : AppColors.textPrimary,
@@ -433,11 +406,13 @@ class _TaskListItem extends StatelessWidget {
                 onTap: onStatusChange,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: _chipBg,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     _chipLabel,

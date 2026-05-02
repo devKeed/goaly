@@ -28,10 +28,14 @@ class PieChartPainter extends CustomPainter {
     final innerRect = Rect.fromCircle(center: center, radius: innerRadius);
 
     final basePaint = Paint()
-      ..color = Colors.white
+      ..color = PieVisuals.surface
       ..style = PaintingStyle.fill;
 
-    canvas.drawCircle(center, radius + 4, Paint()..color = Colors.black.withValues(alpha: 0.06));
+    canvas.drawCircle(
+      center,
+      radius + 4,
+      Paint()..color = Colors.black.withValues(alpha: 0.34),
+    );
     canvas.drawCircle(center, radius, basePaint);
 
     for (int index = 0; index < blocks.length; index++) {
@@ -44,7 +48,10 @@ class PieChartPainter extends CustomPainter {
         ..arcTo(innerRect, start + sweep, -sweep, false)
         ..close();
 
-      final colors = PieVisuals.gradientForCategory(block.category, block.color);
+      final colors = PieVisuals.gradientForCategory(
+        block.category,
+        block.color,
+      );
       final fillPaint = Paint()
         ..style = PaintingStyle.fill
         ..shader = SweepGradient(
@@ -57,7 +64,7 @@ class PieChartPainter extends CustomPainter {
       canvas.drawPath(path, fillPaint);
 
       final dividerPaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.88)
+        ..color = const Color(0xFF050505).withValues(alpha: 0.84)
         ..strokeWidth = 2;
       final dividerStart = _offsetAt(center, innerRadius, start + sweep);
       final dividerEnd = _offsetAt(center, radius, start + sweep);
@@ -65,7 +72,7 @@ class PieChartPainter extends CustomPainter {
 
       if (activeBoundaryIndex == index) {
         final highlightPaint = Paint()
-          ..color = Colors.white
+          ..color = PieVisuals.foreground
           ..strokeWidth = 4
           ..strokeCap = StrokeCap.round;
         canvas.drawLine(dividerStart, dividerEnd, highlightPaint);
@@ -74,7 +81,7 @@ class PieChartPainter extends CustomPainter {
 
     final indicatorAngle = _minuteToRadians(nowMinute);
     final indicatorPaint = Paint()
-      ..color = const Color(0xFF0A1A2B)
+      ..color = PieVisuals.foreground
       ..strokeWidth = 2.4
       ..strokeCap = StrokeCap.round;
 
@@ -82,11 +89,7 @@ class PieChartPainter extends CustomPainter {
     final indicatorOuter = _offsetAt(center, radius + 10, indicatorAngle);
     canvas.drawLine(indicatorInner, indicatorOuter, indicatorPaint);
 
-    canvas.drawCircle(
-      center,
-      5,
-      Paint()..color = const Color(0xFF0A1A2B),
-    );
+    canvas.drawCircle(center, 5, Paint()..color = PieVisuals.foreground);
   }
 
   double _minuteToRadians(int minuteOfDay) {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../theme/app_colors.dart';
+import '../../../../widgets/fitness_components.dart';
 import '../../domain/entities/pie_block_category.dart';
 import '../../domain/entities/pie_insights.dart';
 import 'pie_visuals.dart';
@@ -17,13 +17,8 @@ class PieInsightsPanel extends StatelessWidget {
     final weeklyEntries = insights.weeklyAverageMinutes.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    return Container(
+    return FitnessPanel(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.divider),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -31,7 +26,7 @@ class PieInsightsPanel extends StatelessWidget {
             'Insights',
             style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w900,
               color: PieVisuals.foreground,
             ),
           ),
@@ -40,7 +35,7 @@ class PieInsightsPanel extends StatelessWidget {
             'Daily breakdown',
             style: TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w800,
               color: PieVisuals.subForeground,
             ),
           ),
@@ -50,7 +45,10 @@ class PieInsightsPanel extends StatelessWidget {
               label: entry.key.label,
               valueLabel: '${entry.value.toStringAsFixed(0)}%',
               progress: (entry.value / 100).clamp(0, 1),
-              color: PieVisuals.gradientForCategory(entry.key, 0xFF90A4AE).first,
+              color: PieVisuals.gradientForCategory(
+                entry.key,
+                0xFF90A4AE,
+              ).first,
             );
           }),
           const SizedBox(height: 12),
@@ -58,7 +56,7 @@ class PieInsightsPanel extends StatelessWidget {
             'Weekly average',
             style: TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w800,
               color: PieVisuals.subForeground,
             ),
           ),
@@ -69,7 +67,10 @@ class PieInsightsPanel extends StatelessWidget {
               label: entry.key.label,
               valueLabel: '$hours h',
               progress: (entry.value / (24 * 60)).clamp(0, 1),
-              color: PieVisuals.gradientForCategory(entry.key, 0xFF90A4AE).first,
+              color: PieVisuals.gradientForCategory(
+                entry.key,
+                0xFF90A4AE,
+              ).first,
             );
           }),
           const SizedBox(height: 12),
@@ -87,7 +88,7 @@ class PieInsightsPanel extends StatelessWidget {
             style: const TextStyle(
               fontSize: 14,
               color: PieVisuals.foreground,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -131,7 +132,7 @@ class _MetricBar extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 12,
                 color: PieVisuals.subForeground,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -155,7 +156,7 @@ class _MetricBar extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 11,
                 color: PieVisuals.foreground,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
